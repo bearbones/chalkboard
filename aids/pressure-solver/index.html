@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cell-by-Cell Pressure Solver</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Step through a nonlinear pressure solver cell by cell: what each stage reads, what it writes, and how Newton, BiCGStab and multigrid converge.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&family=Kalam:wght@400;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="page">
+  <header class="masthead">
+    <p class="kicker">chalkboard · fluid simulation</p>
+    <h1>The pressure solver, cell by cell</h1>
+    <p class="lede">Every interval, a fluid simulation solves for the one pressure field that leaves every cell exactly full once things move. This board runs a small solver implementation and stops wherever you like: one interval, one Newton step, one multigrid sweep, or one cell. <span class="key"><i class="sw write"></i>yellow</span> is what the step writes and <span class="key"><i class="sw read"></i>blue, dashed</span> is what it reads.</p>
+  </header>
+
+  <section class="scenario" aria-label="Scenario">
+    <label class="field">
+      <span>Scenario</span>
+      <select id="scenario"></select>
+    </label>
+    <p id="blurb" class="blurb"></p>
+  </section>
+
+  <div class="transport" role="toolbar" aria-label="Playback">
+    <button id="play" class="btn primary" type="button" aria-label="Play">▶ Play</button>
+    <button id="step" class="btn" type="button" title="Advance to the next stop">Step</button>
+    <button id="skip" class="btn" type="button" title="Run to the end of this interval">Finish interval</button>
+    <button id="reset" class="btn ghost" type="button" title="Rebuild the scenario">Reset</button>
+    <label class="field compact">
+      <span>Stop at</span>
+      <select id="gran">
+        <option value="0">Interval</option>
+        <option value="1">Newton step</option>
+        <option value="2">Stage</option>
+        <option value="3">Iteration / candidate</option>
+        <option value="4">Preconditioner</option>
+        <option value="5">Grid level</option>
+        <option value="6">Sweep / pass</option>
+        <option value="7" selected>Cell</option>
+      </select>
+    </label>
+    <label class="field compact speed">
+      <span>Speed <output id="speedOut">40/s</output></span>
+      <input id="speed" type="range" min="-1" max="4.5" step="0.05" value="1.6">
+    </label>
+  </div>
+
+  <main class="layout">
+    <section class="board-area" aria-label="Grid">
+      <div class="board-head">
+        <label class="field compact">
+          <span>Colour by</span>
+          <select id="field"></select>
+        </label>
+        <label class="check"><input id="vel" type="checkbox"> velocities</label>
+      </div>
+      <div class="frame"><canvas id="board" aria-label="Simulation grid"></canvas></div>
+      <div class="legend">
+        <div id="legendBar" class="legend-bar"></div>
+        <div class="legend-labels"><span id="legLo"></span><span id="legMid"></span><span id="legHi"></span></div>
+        <p id="legName" class="legend-name"></p>
+      </div>
+      <ol id="crumbs" class="crumbs" aria-label="Where the solver is"></ol>
+    </section>
+
+    <div class="side">
+    <section class="notes" aria-live="polite">
+      <h2 id="docTitle">Ready</h2>
+      <ol id="code" class="code"></ol>
+      <p id="docText" class="doc-text"></p>
+      <p id="opNote" class="op-note" hidden></p>
+    </section>
+
+    <section class="inspector" aria-label="Cell inspector">
+      <h2>Cell <span id="inspWhere" class="muted"></span></h2>
+      <p class="hint">Tap a cell to pin it. Tap it again to follow the solver.</p>
+      <dl id="inspVals" class="vals"></dl>
+      <div class="stencil-wrap">
+        <p class="stencil-cap" id="stencilCap">Jacobian row</p>
+        <div id="stencil" class="stencil"></div>
+      </div>
+    </section>
+    </div>
+
+    <section class="plots" aria-label="Convergence">
+      <figure>
+        <figcaption><b>Newton</b> max|R| after each iteration <span class="muted">· this interval bold, earlier ones faint</span></figcaption>
+        <canvas id="newtonPlot" class="plot"></canvas>
+      </figure>
+      <figure>
+        <figcaption><b>Linear solve</b> ‖b − Jδ‖∞ / ‖b‖∞ for this Newton step <span class="muted">· dashed: what each method would do on this same system</span></figcaption>
+        <canvas id="linearPlot" class="plot"></canvas>
+        <ul id="linearLegend" class="plot-legend"></ul>
+      </figure>
+    </section>
+
+
+    <div class="side2">
+    <section class="status" aria-label="Intervals">
+      <h2>Intervals</h2>
+      <p id="statusLine" class="status-line"></p>
+      <canvas id="timeline" class="timeline"></canvas>
+      <p class="hint">Bars: Newton iterations per accepted interval. <span class="key"><i class="sw accent"></i>pink</span> ticks: attempts thrown away and retried with half the time step.</p>
+    </section>
+
+    <section class="lab" aria-label="Solver lab">
+      <h2>Solver lab</h2>
+      <p class="hint">Change what the solver does and watch what breaks. Takes effect from the next solve.</p>
+      <label class="field">
+        <span>Linear solver</span>
+        <select id="linear">
+          <option value="bicgstab">BiCGStab + V-cycle (default)</option>
+          <option value="vcycle">V-cycles alone</option>
+          <option value="jacobi">Weighted Jacobi alone</option>
+        </select>
+      </label>
+      <label class="check"><input id="ls" type="checkbox" checked> line search</label>
+      <label class="check"><input id="warm" type="checkbox" checked> warm start from the last pressure</label>
+      <label class="check"><input id="ghosts" type="checkbox" checked> ghost curves on the linear plot</label>
+    </section>
+    </div>
+  </main>
+
+  <footer class="foot">
+    <p>A teaching implementation of a nonlinear pressure solver, on a 16×16 grid of 1 mm cells. It runs the full structure of a production solve: frozen enthalpy, a local-equilibrium source, backward-Euler face kicks, a 5-point Jacobian, BiCGStab with an aggregation V-cycle, a backtracking line search, and adaptive intervals that halve dt on failure. It leaves out heat recovery, capillarity and viscosity (a uniform drag stands in for it), and fallback solvers.</p>
+  </footer>
+</div>
+<script type="module" src="src/app.js"></script>
+</body>
+</html>

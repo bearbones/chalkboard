@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Chalkboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Kalam:wght@700&display=swap">
+<style>
+  :root { --bg: #e9ebe6; --surface: #fdfdfa; --ink: #1e2a2d; --muted: #5a676c; --line: #d2d7d2; --accent: #c98200; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #141b19; --surface: #22302b; --ink: #ecebe2; --muted: #9eaba5; --line: #33423d; --accent: #ffe270; color-scheme: dark; } }
+  :root[data-theme="dark"] { --bg: #141b19; --surface: #22302b; --ink: #ecebe2; --muted: #9eaba5; --line: #33423d; --accent: #ffe270; color-scheme: dark; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.55 "Atkinson Hyperlegible", system-ui, sans-serif; }
+  main { max-width: 720px; margin: 0 auto; padding-block: 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 20px; }
+  h1, h2 { font-family: Kalam, "Comic Neue", cursive; margin: 0; text-wrap: balance; }
+  h1 { font-size: 2.6rem; }
+  p { margin: 0; }
+  .muted { color: var(--muted); }
+  a.card { display: grid; gap: 6px; padding: 18px 20px; background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 12px; color: inherit; text-decoration: none; }
+  a.card:hover { border-color: var(--muted); border-left-color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Chalkboard</h1>
+  <p class="muted">Animated aids that run the real algorithm and show, step by step and cell by cell, what it reads and what it writes.</p>
+  <a class="card" href="aids/pressure-solver/">
+    <h2>The pressure solver, cell by cell</h2>
+    <p class="muted">A Newton–BiCGStab–multigrid pressure solve on a 16×16 grid: heating, chilling, boiling.</p>
+  </a>
+</main>
+</body>
+</html>

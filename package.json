@@ -1,0 +1,11 @@
+{
+  "name": "chalkboard",
+  "private": true,
+  "type": "module",
+  "description": "Animated educational aids: step-by-step views of how numerical code really runs.",
+  "scripts": {
+    "test": "node --test tests/",
+    "serve": "python3 -m http.server 8765",
+    "screenshot": "node tools/screenshot.mjs"
+  }
+}
