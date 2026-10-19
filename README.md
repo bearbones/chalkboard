@@ -80,14 +80,97 @@ It leaves out or changes:
 - **Temperature:** IAPWS-IF97 saturation is extended below the triple point
   and above 640 K, so that trial splits stay bracketed.
 
+### [Fluids by the Numbers](aids/fluid-course/)
+
+An interactive course on simulating fluids, in fifteen chapters and four parts.
+It covers the physics and the people who worked it out, including how the
+notation came to look the way it does. Most of all it covers every way the
+arithmetic goes wrong and what practitioners do about it. Each figure runs a
+real, tested numerical kernel, so you can break a scheme and then fix it:
+
+- push a Courant number past 1;
+- starve a pressure solve of iterations;
+- take the relaxation time of a lattice Boltzmann run down to ½;
+- switch off dealiasing.
+
+| Part | Chapters |
+|---|---|
+| I · The physics, and how it was written down | What is a fluid? · Two ways of watching a flow · Conservation laws · How the equations got their shape · Reynolds and similarity |
+| II · From equations to numbers | From calculus to arithmetic · Advection · Shocks · Diffusion and stiffness |
+| III · Incompressible flow | The pressure puzzle · Solving for pressure · A fluid you can stir |
+| IV · Other roads, and trust | Lattice Boltzmann and particles · Turbulence · Can you trust the numbers? |
+
+Reference pages:
+
+- **People:** a lifelines chart and a card for each person, with a "Myth check" where the usual story is wrong.
+- **Milestones:** in computing flows, filed by the numerical difficulty each one exposed or tamed.
+- **Symbols:** an atlas of the notation, showing how each symbol was first written.
+- **Pathologies:** a rogues' gallery. For each failure it gives the symptom, the cause, how to diagnose it and what to do, with a live demo.
+- **Glossary.**
+
+The history was researched from public sources and then checked by an
+independent pass. Each claim carries a confidence and its sources. Contested
+attributions (who named the Reynolds number, what really sank Richardson's
+1922 forecast, whether Gauss used Gauss–Seidel) are flagged rather than
+smoothed over.
+
+#### What's in the code
+
+| Path | What it holds |
+|---|---|
+| `src/app.js`, `src/course.js` | Hash router (`#/chapter/section`), table of contents, home page; parts, chapter order and the cross-chapter glossary, pathology and widget indexes |
+| `src/chapters/<id>.js` | One module per chapter: prose (HTML with `$…$` TeX), widgets, quizzes, glossary terms, pathology entries |
+| `src/kit/` | TeX-subset → MathML converter, controls and animation loop, plots, field views, quizzes, colour tokens for canvas |
+| `src/reference/` | People, milestones, symbols, pathologies and glossary pages; `*-data.js` are generated from the research files |
+| `src/sims/` | The numerical kernels (below): pure ES modules, no DOM, tested under `node --test` |
+| `dev/` | Kit sampler; `dev/?m=../src/chapters/<id>.js` previews one chapter; `import-research.mjs` regenerates the reference data |
+| `AUTHORING.md` | The contract for chapters, widgets and kernels |
+
+#### Numerical kernels
+
+| File | What it holds |
+|---|---|
+| `flows.js` | Analytic 2-D flows (vortices, cylinder with circulation, Taylor–Green, double gyre…); particle integrators; path, stream and streak lines; material derivative; material-loop area |
+| `molecules.js` | Poisson-gas density sampling, a soft-disk molecular dynamics box with coarse-graining, mean free path and Knudsen regimes |
+| `similarity.js` | Dimension matrices and Buckingham Π groups in exact rational arithmetic; named dimensionless numbers; friction-factor and drag correlations (Colebrook as an iteration) |
+| `verification.js` | Derivative error against h (with the complex step); cancellation, Kahan summation, Float32 drift; Richardson extrapolation and GCI; a manufactured-solution study with bug toggles |
+| `advection.js` | Linear advection: upwind, FTCS, Lax–Friedrichs, Lax–Wendroff, Beam–Warming, leapfrog, Fromm, flux-limited schemes, WENO5; amplification factors, modified-equation coefficients, convergence studies |
+| `burgers.js`, `euler1d.js`, `riemann.js` | Burgers and 1-D Euler finite volumes (Godunov, Rusanov, HLL, HLLC, Roe ± entropy fix, Lax–Wendroff, MUSCL-Hancock); the exact Euler Riemann solver as a generator |
+| `diffusion.js`, `stiff.js` | Heat equation (FTCS, BTCS, Crank–Nicolson, θ, DuFort–Frankel); the Thomas algorithm as a generator; cell-Péclet boundary layers; stability functions, regions and stiff test problems |
+| `grid2d.js`, `poisson.js`, `projection.js` | MAC and collocated grids; Jacobi, Gauss–Seidel, red–black, SOR, CG, PCG (Jacobi, IC(0), MIC(0)), multigrid; projection, Helmholtz–Hodge, the checkerboard |
+| `stablefluids.js` | A stirrable Stable Fluids solver: semi-Lagrangian, BFECC and MacCormack advection; vorticity confinement; buoyancy; obstacles |
+| `lbm.js` | D2Q9 lattice Boltzmann: BGK and TRT, bounce-back, inlets and outlets, Guo forcing; cylinder, cavity, Poiseuille, Taylor–Green and the vortex-street hero; a health check |
+| `sph.js` | Weakly compressible SPH: cubic and Wendland kernels, cell-list neighbours, Tait EOS, artificial viscosity, wall particles, tensile-instability fixes |
+| `fft.js`, `spectral.js`, `turbulence.js` | FFTs; spectral differentiation and pseudo-spectral Burgers with the 2/3 rule; 2-D turbulence; the Sabra shell model; Kolmogorov scales, DNS cost and Pope's model spectrum |
+
+Each kernel's header cites the published scheme it implements. Each kernel's
+test file measures the claims the chapters make: orders of accuracy, stability
+thresholds, conservation, damping factors and exact solutions.
+
+#### Simplifications
+
+- **Dimensions:** everything is 1-D or 2-D. Three-dimensional effects
+  (vortex stretching, the 3-D cascade) are described, and the shell model
+  stands in for them.
+- **Boundaries:** grids are uniform and Cartesian. Solid bodies are
+  staircased masks, except in the potential-flow and Lagrangian
+  demonstrations, which use analytic geometry.
+- **Lattice Boltzmann and SPH:** both run weakly compressible at
+  phone-friendly sizes (about 200×80 lattice nodes, about 1,500 particles).
+  Their errors are part of the lesson, not hidden.
+- **Turbulence models:** RANS and LES models are explained with model
+  spectra and cost estimates, not run as solvers.
+
 ## Layout
 
 ```
 index.html                     landing page
 aids/<aid>/index.html          one self-contained aid per folder
 aids/pressure-solver/src/      physics, solver, linear, trace, board, plots, docs, app
+aids/fluid-course/             the fluids course (see its AUTHORING.md)
 tests/                         node --test
 tools/screenshot.mjs           headless Chromium screenshot after N stops
+tools/check-course.mjs         load course pages headless: errors, overflow, slow frames, monkey test
 tools/bundle.mjs               one-file build (CSS + modules inlined) → dist/
 ```
 

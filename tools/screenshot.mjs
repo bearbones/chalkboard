@@ -2,7 +2,10 @@
 //
 //   node tools/screenshot.mjs [--url URL] [--out FILE] [--width 1280] [--height 1000]
 //                             [--theme dark|light] [--scenario hot] [--stops N] [--gran 0-7]
-//                             [--field auto]
+//                             [--field auto] [--selector CSS] [--theme-attr light|dark]
+//
+// Course pages: --url 'http://localhost:8765/aids/fluid-course/#/advection'
+// (--selector '#cfl + figure' shoots one element; --theme-attr sets data-theme).
 //
 // Needs Playwright (`npm i -D playwright && npx playwright install chromium`),
 // or PLAYWRIGHT=/path/to/node_modules/playwright to borrow an existing copy.
@@ -40,8 +43,22 @@ await page.evaluate(async ({ stops, gran, field, scenario }) => {
   while (left > 0) left -= cb.advance(left, Number(gran ?? 7)) || 0;
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 }, args);
+if (args['theme-attr']) await page.evaluate((t) => document.documentElement.setAttribute('data-theme', t), args['theme-attr']);
+if (args.selector) {
+  await page.locator(args.selector).first().scrollIntoViewIfNeeded();
+} else if (args.full !== 'no') {
+  // Walk down the page so lazily mounted figures start, then return to the top.
+  await page.evaluate(async () => {
+    for (let y = 0; y < document.body.scrollHeight; y += innerHeight / 2) {
+      scrollTo(0, y);
+      await new Promise((r) => setTimeout(r, 60));
+    }
+    scrollTo(0, 0);
+  });
+}
 await page.waitForTimeout(Number(args.wait || 400));
-await page.screenshot({ path: args.out || 'screenshot.png', fullPage: args.full !== 'no' });
+if (args.selector) await page.locator(args.selector).first().screenshot({ path: args.out || 'screenshot.png' });
+else await page.screenshot({ path: args.out || 'screenshot.png', fullPage: args.full !== 'no' });
 await browser.close();
 if (errors.length) {
   console.error(errors.join('\n'));

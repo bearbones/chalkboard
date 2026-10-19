@@ -15,3 +15,6 @@
   vs finite differences, V-cycle energy reduction, BiCGStab forcing) green.
 - When an aid models a real algorithm, keep the README's code map and
   simplifications list in step with the code.
+- The fluid-dynamics course (`aids/fluid-course/`) has its own authoring guide,
+  `aids/fluid-course/AUTHORING.md`: chapter modules, widgets, kernels, history
+  rules, and `tools/check-course.mjs` for browser checks.
