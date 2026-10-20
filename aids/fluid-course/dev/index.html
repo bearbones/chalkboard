@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kit Sampler</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=JetBrains+Mono:wght@400;600&family=Kalam:wght@400;700&display=swap">
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<main id="view" class="view"></main>
+<script type="module">
+// Dev-only: render one chapter-shaped module (default: the kit sampler) with
+// the real renderer. ?m=../src/chapters/advection.js previews any chapter alone.
+import { renderChapter } from '../src/kit/render.js';
+import { course } from '../src/course.js';
+import { chapter as sampler } from './sampler.js';
+const params = new URLSearchParams(location.search);
+const ch = params.get('m') ? (await import(params.get('m'))).chapter : sampler;
+ch.n = ch.n || 0;
+const gl = course.glossary();
+const fake = { ...course, glossary: () => ({ ...gl, ...Object.fromEntries(Object.entries(ch.glossary || {}).map(([k, g]) => [k, { ...g, chapter: ch.id, chapterTitle: ch.short }])) }), neighbours: () => ({}), partOf: () => null };
+renderChapter(ch, document.getElementById('view'), { course: fake, signal: new AbortController().signal, go: () => {}, current: () => ch.id });
+window.__chalkboard = { ready: true };
+</script>
+</body>
+</html>

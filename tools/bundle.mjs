@@ -26,12 +26,13 @@ visit(resolve(dir, entry));
 const modules = order.map((file) => {
   let src = readFileSync(file, 'utf8');
   const exported = [];
+  // One name per `export const`: a multi-declarator export would silently drop the rest.
+  // (A multi-line array or object literal is fine: no bracket may open before the comma.)
+  if (/^export (const|let) [\w$]+\s*=\s*[^;\n[{(`'"]*,\s*$/m.test(src)) throw new Error(`split multi-name export in ${file}`);
   src = src.replace(/^import \* as (\w+) from '([^']+)';/gm, (_, name, path) => `const ${name} = __m.${id(resolve(dirname(file), path))};`);
   src = src.replace(/^import \{([\s\S]*?)\} from '([^']+)';/gm, (_, names, path) => `const {${names.replace(/(\w+)\s+as\s+(\w+)/g, '$1: $2')}} = __m.${id(resolve(dirname(file), path))};`);
-  src = src.replace(/^export (const|let|function\*?|class) (\w+)/gm, (_, kw, name) => (exported.push(name), `${kw} ${name}`));
-  src = src.replace(/^export (const|let) (\w+)\s*=/gm, (_, kw, name) => (exported.push(name), `${kw} ${name} =`));
-  // One name per `export const`: a multi-declarator export would silently drop the rest.
-  if (/^export (const|let) [^;]*,\s*$/m.test(src)) throw new Error(`split multi-name export in ${file}`);
+  src = src.replace(/^export (const|let|function\*?|class) ([\w$]+)/gm, (_, kw, name) => (exported.push(name), `${kw} ${name}`));
+  src = src.replace(/^export (const|let) ([\w$]+)\s*=/gm, (_, kw, name) => (exported.push(name), `${kw} ${name} =`));
   if (/^(import|export) /m.test(src)) throw new Error(`unhandled import/export in ${file}`);
   return `// ---- ${relative(dir, file)}\n__m.${id(file)} = (() => {\n${src}\nreturn { ${exported.join(', ')} };\n})();`;
 });
