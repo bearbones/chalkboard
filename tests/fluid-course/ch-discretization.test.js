@@ -262,7 +262,7 @@ test('FTCS with Δt ∝ Δx² is stable in the Lax–Richtmyer sense and converg
   near(r.orders.at(-1), 2, 0.02);
 });
 
-test('downwind is inconsistent with the direction of information and diverges at once', () => {
+test('downwind is consistent but unstable, so it diverges from the coarsest grid', () => {
   const r = study('downwind', 0.5);
   assert.ok(r.errors[1] > r.errors[0] && r.errors[5] > 1e100);
 });

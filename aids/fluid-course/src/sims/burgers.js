@@ -108,7 +108,7 @@ export const LIMITERS = [
   { id: 'minmod', name: 'minmod', tex: '\\sigma = \\operatorname{minmod}(a, b)', description: 'The smaller slope when both agree in sign, else zero. Most diffusive TVD limiter.' },
   { id: 'vanleer', name: 'van Leer', tex: '\\sigma = \\frac{2ab}{a + b} \\ (ab > 0)', description: 'Harmonic mean of the two slopes (van Leer 1974). Smooth.' },
   { id: 'mc', name: 'MC', tex: '\\sigma = \\operatorname{minmod}\\left(2a, \\tfrac12(a+b), 2b\\right)', description: 'Monotonised central (van Leer 1977). Sharp and robust.' },
-  { id: 'superbee', name: 'superbee', tex: '\\sigma = \\operatorname{maxmod}\\left(\\operatorname{minmod}(2a, b), \\operatorname{minmod}(a, 2b)\\right)', description: 'Roe (1985). Most compressive TVD limiter; squares off smooth waves.' },
+  { id: 'superbee', name: 'superbee', tex: '\\sigma = \\operatorname{maxmod}\\left(\\operatorname{minmod}(2a, b), \\operatorname{minmod}(a, 2b)\\right)', description: 'Due to Roe, as credited in Sweby (1984). Most compressive TVD limiter; squares off smooth waves.' },
   { id: 'none', name: 'unlimited (Fromm)', tex: '\\sigma = \\tfrac12(a + b)', description: 'Central slope, no limiting. Second order but oscillates at jumps (Godunov\'s theorem).' },
 ];
 

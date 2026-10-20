@@ -47,7 +47,7 @@ export function mountDufort(fig, { signal }) {
   const NX = Float64Array.from(NS);
   const E1 = new Float64Array(NS.length).fill(NaN);
   const E2 = new Float64Array(NS.length).fill(NaN);
-  const REF = Float64Array.from(NS, (n) => 2.5 / (n * n));
+  const REF = Float64Array.from(NS, (n) => 0.5 / (n * n)); // below the r = 1 errors, so both stay visible
   const studies = {};
   let blew1 = [];
   let blew2 = [];

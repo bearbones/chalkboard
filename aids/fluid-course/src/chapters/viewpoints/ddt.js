@@ -280,7 +280,7 @@ export function mountDdt(fig, ctx) {
         ? `The patch stays put: the pier feels only the sunshine (∂T/∂t = β = ${fmt(beta, 2)}), while the boat also feels the patch as it passes.`
         : 'The patch stays put: the pier’s reading never changes (∂T/∂t = 0), but the boat warms and cools as it crosses the patch. All its change is convective.';
     } else {
-      s = `The patch moves at ${fmt(k, 2)} × the water’s speed, so the water slips through it: both thermometers see change, and the boat’s is the smaller part (the bars do not cancel).`;
+      s = `The patch moves at ${fmt(k, 2)} × the water’s speed. The pier sees it pass at ${fmt(k, 2)} × that speed, the boat at ${fmt(Math.abs(1 - k), 2)} ×, so both readings change and the local and convective bars only partly cancel.`;
     }
     if (ui.status.textContent !== s) ui.status.textContent = s;
   }

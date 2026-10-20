@@ -202,7 +202,7 @@ export function mountStencil(fig, { signal }) {
     ctx.fillStyle = pal.css('muted');
     ctx.textAlign = 'left';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('dashed: exact profile · solid: polynomial through the stencil', padL, H - 4);
+    ctx.fillText(Wd < 460 ? 'dashed: exact · solid: stencil polynomial' : 'dashed: exact profile · solid: polynomial through the stencil', padL, H - 4);
 
     rFoot.set(fmtNu(nu));
     rSpan.set(`${lo} … ${hi}`.replace(/-/g, '−'));

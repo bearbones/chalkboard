@@ -140,9 +140,56 @@ test('the chapter text numbers: FTCS growth, upwind damping of the odd-even mode
   // Upwind at ν = 1 is the exact shift.
   const st = createState(64, 'square');
   run(st, 'upwind', 1, 64);
-  const f = makeProfile('square');
   let err = 0;
-  for (let j = 0; j < 64; j++) err = Math.max(err, Math.abs(st.u[j] - st.u0[j]));
-  assert.ok(err < 1e-12 && f && exact, 'upwind at ν = 1 returns the start after one revolution');
-  assert.ok(PRESETS['cfl-violation'], 'shared preset present');
+  for (let j = 0; j < 64; j++) err = Math.max(err, Math.abs(st.u[j] - exact(makeProfile('square'), st.x[j])));
+  // Cell averages of a square wave whose jumps sit on cell faces equal the point values.
+  assert.ok(err < 1e-12, 'upwind at ν = 1 returns the start after one revolution');
+});
+
+const maxAbs = (st) => {
+  const d = diagnostics(st);
+  return Math.max(Math.abs(d.max), Math.abs(d.min));
+};
+
+test('the chapter text numbers: lab runs quoted in the prose and gallery', () => {
+  // FTCS lab (n = 100, ν = 0.5): 3.5e8 after one trip; growth over any 20-step window 1.11–1.12.
+  const f = createState(100, 'square');
+  const M = [maxAbs(f)];
+  for (let k = 0; k < 200; k++) M.push(maxAbs(step(f, 'ftcs', 0.5)));
+  close(M[200] / 3.5e8, 1, 0.02, 'FTCS max after 200 steps');
+  for (const e of [100, 150, 200]) {
+    const r = Math.pow(M[e] / M[e - 20], 1 / 20);
+    assert.ok(r > 1.105 && r < 1.125, `FTCS 20-step growth ending at ${e}: ${r}`);
+  }
+  close(maxAbs(run(createState(100, 'square'), 'ftcs', 0.1, 1000)), 14.2, 0.1, 'FTCS ν = 0.1, one trip');
+  close(diagnostics(run(createState(100, 'square'), 'lxf', 0.5, 200)).max, 0.71, 0.005, 'LxF peak after one trip');
+  // FTCS on a smooth Gaussian: delayed, not prevented.
+  close(maxAbs(run(createState(100, 'gaussian'), 'ftcs', 0.1, 1000)), 1.16, 0.005, 'FTCS Gaussian, one trip');
+  close(maxAbs(run(createState(100, 'gaussian'), 'ftcs', 0.1, 5000)), 135, 1, 'FTCS Gaussian, five trips');
+  // Upwind phase speed at θ = 2 crosses 1 at ν = 1/2.
+  close(amplification('upwind', 0.25, 2).relSpeed, 0.68, 0.005, 'upwind c/a at ν = 0.25');
+  close(amplification('upwind', 0.75, 2).relSpeed, 1.11, 0.005, 'upwind c/a at ν = 0.75');
+  // Leapfrog just past ν = 1 on the square wave: |u| passes 10 within about 30 steps.
+  const lf = createState(100, 'square');
+  let k = 0;
+  while (k < 100 && maxAbs(lf) <= 10) {
+    step(lf, 'leapfrog', 1.02);
+    k++;
+  }
+  assert.ok(k >= 25 && k <= 35, `leapfrog ν = 1.02 passes 10 at step ${k}`);
+  // Dispersive undershoot of LW on a Gaussian after one trip: 0.15, 0.03, < 1e-4.
+  const under = (n) => diagnostics(run(createState(n, 'gaussian'), 'lw', 0.5, 2 * n)).undershoot;
+  close(under(50), 0.15, 0.005, 'LW undershoot n = 50');
+  close(under(100), 0.031, 0.002, 'LW undershoot n = 100');
+  assert.ok(under(200) < 1e-4, 'LW undershoot n = 200');
+  // Leapfrog start and filter (two trips): flip 3.5e-2, 1.9e-3, 1.4e-3; peak 0.92 vs 0.81.
+  const lfr = (o) => diagnostics(run(createState(100, 'gaussian'), 'leapfrog', 0.5, 400, o));
+  const copy = lfr({ start: 'copy' }), lwS = lfr({ start: 'lw' }), ass = lfr({ start: 'copy', asselin: 0.1 });
+  close(copy.flip, 3.5e-2, 1e-3, 'copy-start flip');
+  close(lwS.flip, 1.9e-3, 1e-4, 'LW-start flip');
+  close(copy.flip / ass.flip, 24, 1, 'Asselin cuts the flip ~24x');
+  close(copy.max, 0.92, 0.005, 'copy-start peak');
+  close(ass.max, 0.81, 0.005, 'filtered peak');
+  // The shared presets the chapter's figures load are still there.
+  for (const id of ['ftcs', 'downwind', 'cfl-violation', 'numerical-diffusion', 'lw-ringing', 'leapfrog-start', 'leapfrog-asselin']) assert.ok(PRESETS[id], id);
 });

@@ -290,7 +290,7 @@ export function mountShear(fig, { signal }) {
       ctx.strokeStyle = pal.css('ink', 0.75);
       ctx.fillStyle = pal.css('ink', 0.75);
       ctx.lineWidth = 1.5;
-      const scale = 0.11 * w; // px per unit of γ̇ at the top
+      const scale = 0.3 * w; // px per unit of γ̇ at the top
       for (let q = 1; q <= 3; q++) {
         const frac = q / 3;
         const len = Math.max(-0.42 * w, Math.min(0.42 * w, r * frac * scale));
@@ -310,7 +310,7 @@ export function mountShear(fig, { signal }) {
 
   function pushArrow(ctx, pal, xEnd, y, w) {
     if (Math.abs(tau) < 0.005) return;
-    const len = (tau / TAU_MAX) * 0.3 * w;
+    const len = 10 + (Math.abs(tau) / TAU_MAX) * 0.3 * w;
     ctx.strokeStyle = pal.css('accent');
     ctx.fillStyle = pal.css('accent');
     ctx.lineWidth = 2.5;

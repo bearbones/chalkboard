@@ -126,3 +126,18 @@ test('error ratios on halving Δx match O(Δx^p) for the figure\'s schemes', () 
   assert.ok(f.errors[0] / f.errors[1] > 1.8, `ftcs first ratio ${f.errors[0] / f.errors[1]}`);
   assert.ok(f.errors[3] > 1e6, `ftcs finest error ${f.errors[3]}`);
 });
+
+// The notation-five-ways figure renders these strings with the kit's TeX
+// subset; every stage must parse and keep the five term colours.
+test('every stage of the five-ways figure parses and colours its terms', async () => {
+  const { STAGES } = await import('../../aids/fluid-course/src/chapters/notation/five-ways.js');
+  assert.equal(STAGES.length, 6);
+  for (const s of STAGES) {
+    assert.doesNotThrow(() => tex(s.mom, { display: true }), `${s.id} momentum`);
+    assert.doesNotThrow(() => tex(s.comp, { display: true }), `${s.id} companion`);
+    const used = new Set([...s.mom.matchAll(/\\class\{(t\d)\}/g)].map((m) => m[1]));
+    const want = s.id === 'euler' ? ['t1', 't2', 't3', 't5'] : ['t1', 't2', 't3', 't4', 't5'];
+    if (s.id === 'stokes') want.splice(want.indexOf('t2'), 1); // Du/Dt carries terms 1 and 2
+    assert.deepEqual([...used].sort(), want, `${s.id} colours`);
+  }
+});

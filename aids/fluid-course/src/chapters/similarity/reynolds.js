@@ -170,7 +170,7 @@ export function mountSimilarityReynolds(fig) {
 
     const where = `${tube.label} tube, ${fmt(P.T, 2)} °C, ${fmt(P.U, 3)} m/s: Re = ${reFmt(Re)}.`;
     if (regime === 'direct') status.textContent = `${where} Below about 2,020 any disturbance dies out: the dye stays a straight thread.`;
-    else if (regime === 'direct-unstable') status.textContent = `${where} The dye is still straight, because this inlet is quiet enough up to ${reFmt(inlet.Re)}; but above 2,020 a disturbance would no longer die out.`;
+    else if (regime === 'direct-unstable') status.textContent = `${where} The dye is still straight, because this inlet is quiet enough up to ${reFmt(inlet.Re)}; but above 2,020 a large enough disturbance would no longer die out.`;
     else status.textContent = `${where} Past this inlet’s limit of ${reFmt(inlet.Re)}: the dye mixes up with the water and fills the rest of the tube.${P.view === 'speed' ? ' Switch the plot to Reynolds number to see the three tubes agree.' : ''}`;
   }
 

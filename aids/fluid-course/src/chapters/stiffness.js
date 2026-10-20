@@ -47,9 +47,9 @@ export const chapter = {
 
 <div class="try"><ol>
 <li>Press Play at $r = 0.4$. The sawtooth (too small to see) dies within a few steps, and the sine decays like the dashed curve.</li>
-<li>Drag $r$ to 0.52 and press Play. Watch the readout <em>worst |G| on the grid</em>: 1.078. The sawtooth grows by that factor each step, from $10^{-3}$ to visible in about 60 steps, and the run stops when the error passes 3.</li>
-<li>Set $r$ to exactly 0.5. The shortest wave now has $G = -1$: it flips sign but never grows. Over 300 steps the error stays below $10^{-3}$.</li>
-<li>Keep $r = 0.4$ and switch the grid from $n = 50$ to $n = 100$. The step $\Delta t$ drops by four, and <em>steps to t = 0.1</em> rises from 313 to 1,250.</li>
+<li>Drag $r$ to 0.52 and press Play. Watch the readout <em>worst |G| on the grid</em>: 1.078. The sawtooth grows by that factor each step, from $10^{-3}$ to visible in about 50 steps, and the run stops when the error passes 3, about 105 steps in.</li>
+<li>Set $r$ to exactly 0.5. The shortest wave now has $G = -1$: it flips sign but never grows. Over 300 steps the error stays at about $10^{-3}$, the height of the sawtooth.</li>
+<li>Keep $r = 0.4$ and switch the grid from $n = 50$ to $n = 100$. The step $\Delta t$ drops by four, and <em>steps to t = 0.1</em> rises from 625 to 2,500.</li>
 </ol></div>
 
 <aside class="pitfall">The classic way to meet this limit is to refine a grid that worked and keep the old time step. Halving $\Delta x$ quadruples $r$, so a run that sat at $r = 0.2$ jumps to $r = 0.8$ and explodes from the shortest waves. See <a href="#/pathologies">the gallery entry</a> on the explicit diffusion limit.</aside>
@@ -112,7 +112,7 @@ export const chapter = {
 
 <p>has $|G| \le 1$ for every $r$, so the scheme is unconditionally stable and second order in both time and space. It is the default for diffusion terms in a great many codes.</p>
 
-<aside class="history" data-era="1947">John Crank and Phyllis Nicolson published the method in the January 1947 issue of the <em>Proceedings of the Cambridge Philosophical Society</em>. It grew out of a wartime request to Douglas Hartree about a very nonlinear heat-conduction problem with a temperature-dependent heat source. According to Charlotte Froese Fischer's biography of Hartree, as quoted by MacTutor, the problem was put to Hartree and he chose Crank and Nicolson to work on it. An explicit method suggested by others had given an oscillating error; their implicit method needed more work per step but removed the oscillations and allowed much larger steps. The work was done on desk calculators: MacTutor quotes Crank recalling that to burn a piece of wood numerically could then take a week. Textbooks often add that the paper was the first to print von Neumann's stability analysis. That claim goes back to secondary sources and we could not confirm it. The earliest confirmed printed account involving von Neumann is a 1950 paper with Charney and Fjørtoft.</aside>
+<aside class="history" data-era="1947">John Crank and Phyllis Nicolson published the method in the January 1947 issue of the <em>Proceedings of the Cambridge Philosophical Society</em>. It grew out of a wartime request to Douglas Hartree about a very nonlinear heat-conduction problem with a temperature-dependent heat source. According to Charlotte Froese Fischer's biography of Hartree, as quoted by MacTutor, the problem was put to Hartree and he chose Crank and Nicolson to work on it. An earlier explicit approach had given oscillating errors; their implicit method needed more work per step but removed the oscillations and allowed much larger steps. The work was done on desk calculators: MacTutor quotes Crank recalling that to burn a piece of wood numerically could then take a week. Textbooks often add that the paper was the first to print von Neumann's stability analysis. That claim goes back to secondary sources and we could not confirm it. The earliest confirmed printed account involving von Neumann is a 1950 paper with Charney and Fjørtoft.</aside>
 
 <aside class="who" data-person="john-crank">Co-author of the 1947 method. His book <em>The Mathematics of Diffusion</em> (Oxford, 1956) became the standard reference on diffusion problems.</aside>
 
@@ -125,7 +125,7 @@ export const chapter = {
 <div class="try"><ol>
 <li>Press Step a few times. The total variation jumps from 1 to 1.567 on the first step and the profile zig-zags beside the jump. Press Play to watch the zig-zag flip every step.</li>
 <li>Switch to backward Euler at the same $r$. No wiggles: its $G$ tends to 0 for short waves, not to $-1$. On this data its error after 12 steps (0.0070) is smaller than Crank–Nicolson's (0.020), despite being first order.</li>
-<li>Back on Crank–Nicolson, tick <em>Start with two backward-Euler half steps</em> and reset. The ringing is gone, and after 12 steps the error is $1.7\times 10^{-4}$, forty times smaller than backward Euler's.</li>
+<li>Back on Crank–Nicolson, tick <em>Start with two backward-Euler half steps</em> and reset. The ringing is gone. Press Step 13 times, which reaches the same time as 12 full steps because the start-up uses two presses: the error is $1.7\times 10^{-4}$, forty times smaller than backward Euler's.</li>
 <li>Choose the θ-method and try $\theta = 0.6$, then $0.95$. The first still overshoots (total variation 1.22); the second is monotone, at the cost of first-order accuracy.</li>
 <li>Find where ringing starts. With Crank–Nicolson on the step, new wiggles appear once $r$ passes about 4.</li>
 </ol></div>
@@ -158,7 +158,7 @@ export const chapter = {
 
 <div class="try"><ol>
 <li>With explicit Euler, $n = 16$ and $h = 0.0019$, all 15 modes sit inside the disc. Drag $h$ up past 0.00197 and watch the stiffest mode leave the region.</li>
-<li>Set $h$ back to 0.0019 and raise $n$ to 32. The eigenvalues spread four times further left: 8 modes now grow. Each refinement of the grid costs a factor of four in $h$.</li>
+<li>Set $h$ back to 0.0019 and raise $n$ to 32. The eigenvalues spread four times further left: 21 of the 31 modes now grow. Each refinement of the grid costs a factor of four in $h$.</li>
 <li>Switch to RK4. Its region is bigger, so the limit is about 40% larger, but it is still bounded.</li>
 <li>Choose the trapezoid rule with $n = 64$ and $h = 0.01$. Every mode is inside, but on the right $|R|$ of the stiffest mode is about 0.98, where the exact factor is zero to every digit. Switch to BDF2 or implicit Euler and that factor drops well below 1.</li>
 </ol></div>
@@ -168,7 +168,7 @@ export const chapter = {
 <figure data-widget="stiffness-ode" data-preset="euler-broken" class="wide"><figcaption>A stiff ODE integrated to the end of its run. Left: the numerical solution against the exact one. Right: the error on a log scale. The readouts give $h\lambda$ for the fast eigenvalue $\lambda = -1000$ and the factor $R(h\lambda)$ the method applies to that mode each step.</figcaption></figure>
 
 <div class="try"><ol>
-<li>At $h = 0.0021$, explicit Euler has $h\lambda = -2.1$ and $R = -1.1$. Rounding errors grow by 10% per step, and by $t = 2$ the solution is near $10^{33}$. Drop $h$ to 0.0019: the largest error is $1.8\times 10^{-6}$.</li>
+<li>At $h = 0.0021$, explicit Euler has $h\lambda = -2.1$ and $R = -1.1$. Every small error, truncation or rounding, grows by 10% per step. The figure stops the run near $t = 0.71$, when the error passes $10^{8}$; left alone it would reach $10^{33}$ by $t = 2$. Drop $h$ to 0.0019: the largest error is $1.8\times 10^{-6}$.</li>
 <li>Try RK4. It survives up to $h = 0.0027$ and fails at 0.0028: a bigger stability interval, the same kind of limit.</li>
 <li>Choose implicit Euler and push $h$ to 0.1, fifty times the explicit limit. The error is $5\times 10^{-5}$.</li>
 <li>Pick the problem with $y_0 = 2$, which starts off the slow solution, and the trapezoid rule at $h = 0.1$. The transient is multiplied by $R(-100) = -49/51$ each step: after ten steps it is still 0.67, flipping sign every step. Implicit Euler ($R = 1/101$) removes it in one step.</li>
@@ -185,7 +185,7 @@ export const chapter = {
 
 <h2 id="peclet">When diffusion is too weak: the Péclet number</h2>
 
-<p>Now let the fluid move. A flow of speed $a$ carries heat downstream while diffusion spreads it. Their ratio over a length $L$ is the <dfn data-term="peclet-number">Péclet number</dfn> $\mathrm{Pe} = aL/\kappa$, named after Jean Claude Eugène Péclet; who gave the number his name is not recorded. When Pe is large, carrying wins nearly everywhere, and diffusion only matters in thin layers where something forces a sharp change. The steady problem with fixed values at both ends shows such a layer:</p>
+<p>Now let the fluid move. A flow of speed $a$ carries heat downstream while diffusion spreads it. Their ratio over a length $L$ is the <dfn data-term="peclet-number">Péclet number</dfn> $\mathrm{Pe} = aL/\kappa$, named after Jean Claude Eugène Péclet; we could not establish who first gave the number his name. When Pe is large, carrying wins nearly everywhere, and diffusion only matters in thin layers where something forces a sharp change. The steady problem with fixed values at both ends shows such a layer:</p>
 
 <div class="eq" id="eq-advdiff">$$-a\,u' + \kappa\,u'' = 0,\quad u(0) = 0,\ u(1) = 1:\qquad u(x) = \frac{e^{\mathrm{Pe}\,x} - 1}{e^{\mathrm{Pe}} - 1}$$<span class="eq-tag">(9.8)</span></div>
 
@@ -193,7 +193,7 @@ export const chapter = {
 
 <div class="eq" id="eq-central-weights">$$u_j = \frac{1}{2}\left[\left(1 + \frac{P}{2}\right)u_{j-1} + \left(1 - \frac{P}{2}\right)u_{j+1}\right],\qquad P = \frac{a\,\Delta x}{\kappa}$$<span class="eq-tag">(9.9)</span></div>
 
-<p>where $P$ is the <dfn data-term="cell-peclet-number">cell Péclet number</dfn>, the Péclet number of one cell. Read (9.9) as before: a node is an average of its neighbours, weighted towards upstream. When $P > 2$ the downstream weight $1 - P/2$ is negative, and the scheme loses the maximum principle just as FTCS did at $r > 1/2$. The discrete solution is a constant plus a multiple of $\rho^j$ with $\rho = (1 + P/2)/(1 - P/2)$, which is negative for $P > 2$. So it alternates in sign from node to node. At $P = 4$, $\rho = -3$, and the values next to the outflow are exactly $-1/3$, $1/9$, $-1/27$ and so on: a temperature below both boundary values.</p>
+<p>where $P$ is the <dfn data-term="cell-peclet-number">cell Péclet number</dfn>, the Péclet number of one cell. Read (9.9) as before: a node is an average of its neighbours, weighted towards upstream. When $P > 2$ the downstream weight $1 - P/2$ is negative, and the scheme loses the maximum principle just as FTCS did at $r > 1/2$. The discrete solution is a constant plus a multiple of $\rho^j$ with $\rho = (1 + P/2)/(1 - P/2)$, which is negative for $P > 2$. So it alternates in sign from node to node. At $P = 4$, $\rho = -3$, and the values next to the outflow are $-1/3$, $1/9$, $-1/27$ and so on, to within $10^{-9}$: a temperature below both boundary values.</p>
 
 <figure data-widget="stiffness-peclet" data-preset="central-wiggles"><figcaption>Steady advection–diffusion with the boundary layer at $x = 1$. Central differencing, first-order upwind and exponential fitting on the same grid, against the exact profile (9.8). The Péclet slider changes the physics; the grid select changes only the resolution.</figcaption></figure>
 
@@ -204,7 +204,7 @@ export const chapter = {
 <li>Turn on upwind at Pe = 40 with 20 cells. It never wiggles, but the readout shows why: it behaves like central differencing with $\kappa$ doubled, so its layer is too thick (error 0.20).</li>
 </ol></div>
 
-<p>There are three standard cures. <strong>Refine</strong> until $P \le 2$ in the layer, which is what the physics asks for anyway if the layer matters. <strong>Upwind</strong> the advection term, as in <a href="#/advection/upwind">the advection chapter</a>. That is always monotone, and it is exactly central differencing with $\kappa$ replaced by $\kappa + |a|\Delta x/2$: <dfn data-term="numerical-diffusion">numerical diffusion</dfn> of the size of the physical diffusion once $P = 2$. <strong>Exponential fitting</strong> solves (9.8) exactly between neighbouring nodes. This replaces $\kappa$ by $\kappa\,(P/2)\coth(P/2)$ and makes the scheme exact at the nodes for constant $a$ and $\kappa$, monotone for every $P$, and close to upwind when $P$ is large. It was found more than once: by Allen and Southwell (1955) for viscous flow, by Il'in (1969) in numerical analysis, and by Scharfetter and Gummel (1969) for semiconductor devices. Patankar's hybrid and power-law schemes (1980) are cheap approximations to it. With variable coefficients or in several dimensions, no scheme of this kind is exact, but the fitting keeps its monotonicity.</p>
+<p>There are three standard cures. <strong>Refine</strong> until $P \le 2$ in the layer, which is what the physics asks for anyway if the layer matters. <strong>Upwind</strong> the advection term, as in <a href="#/advection/upwind">the advection chapter</a>. That is always monotone, and it is exactly central differencing with $\kappa$ replaced by $\kappa + |a|\Delta x/2$: <dfn data-term="numerical-diffusion">numerical diffusion</dfn> of the size of the physical diffusion once $P = 2$. <strong>Exponential fitting</strong> solves (9.8) exactly between neighbouring nodes. This replaces $\kappa$ by $\kappa\,(P/2)\coth(P/2)$ and makes the scheme exact at the nodes for constant $a$ and $\kappa$, monotone for every $P$, and close to upwind when $P$ is large. It was found more than once: by Allen and Southwell (1955) for viscous flow, by Il'in (1969) in numerical analysis, and by Scharfetter and Gummel (1969) for semiconductor devices. The hybrid and power-law schemes popularised by Patankar's 1980 book are cheap approximations to it. With variable coefficients or in several dimensions, no scheme of this kind is exact, but the fitting keeps its monotonicity.</p>
 
 <p>The cell Péclet number also links this section to the first. An explicit scheme for advection–diffusion faces two separate step limits, $\Delta t \le \Delta x^2/(2\kappa)$ for diffusion and $\Delta t \le \Delta x/|a|$ for advection (the <a href="#/advection/cfl">CFL condition</a>). Their ratio is exactly $P/2$. On a grid fine enough to resolve the layers ($P \lesssim 2$), the diffusion limit is the tighter of the two. That is why so many flow solvers treat viscous terms implicitly and advection explicitly.</p>
 
@@ -242,7 +242,7 @@ export const chapter = {
 <li>With $\Delta t = \Delta x/2$ and 40 cells, the amplitude follows the damped wave, not the heat equation. At $t = 0.2$ it is $-0.51$ instead of $+0.139$.</li>
 <li>Refine to 80 and 160 cells. The error at $t = 0.2$ grows: 0.65, 0.68, 0.70, approaching the gap between the two equations. Every run is stable.</li>
 <li>Switch the path to $r = 1$. Now $\Delta t/\Delta x = 1/n$ shrinks as you refine, and the error falls like $n^{-2}$: $1.55\times 10^{-3}$ at 40 cells.</li>
-<li>Switch to Richardson. It blows up on every grid from 20 cells, whichever path you choose, from rounding errors alone.</li>
+<li>Switch to Richardson. It blows up on every grid from 20 cells on the $r = 1$ path, and from 40 cells with $\Delta t = \Delta x/2$, where the run to $t = 0.2$ is short enough to finish first on the coarser grids. Rounding errors seed the growth.</li>
 </ol></div>
 
 <aside class="who" data-person="stanley-frankel">With E. C. Du Fort he published the scheme of this section in 1953, in <em>Mathematical Tables and Other Aids to Computation</em>. In 1950 he had found over-relaxation for elliptic problems, independently of David Young.</aside>
@@ -258,7 +258,7 @@ export const chapter = {
 <li>L. F. Richardson, "The approximate arithmetical solution by finite differences of physical problems involving differential equations, with an application to the stresses in a masonry dam", <em>Phil. Trans. R. Soc. A</em> 210 (1911) 307–357; read 13 January 1910.</li>
 <li>E. C. Du Fort and S. P. Frankel, "Stability conditions in the numerical treatment of parabolic differential equations", <em>Math. Tables Aids Comput.</em> 7 (1953) 135–152.</li>
 <li>P. D. Lax and R. D. Richtmyer, "Survey of the stability of linear finite difference equations", <em>Comm. Pure Appl. Math.</em> 9 (1956) 267–293.</li>
-<li>D. J. Galloway and D. J. Ivers, "Slow-burning instabilities of Dufort–Frankel finite differencing", <em>ANZIAM J.</em> 63 (2021), doi:10.1017/S1446181121000043.</li>
+<li>D. Galloway and D. Ivers, "Slow-burning instabilities of DuFort–Frankel finite differencing", <em>ANZIAM J.</em> 63(1) (2021) 23–38, doi:10.1017/S1446181121000043.</li>
 <li>J. G. Charney, R. Fjørtoft and J. von Neumann, "Numerical integration of the barotropic vorticity equation", <em>Tellus</em> 2 (1950) 237–254; G. G. O'Brien, M. A. Hyman and S. Kaplan, "A study of the numerical solution of partial differential equations", <em>J. Math. Phys.</em> 29 (1950) 223–251.</li>
 <li>L. H. Thomas, "Elliptic problems in linear difference equations over a network", Watson Scientific Computing Laboratory report, Columbia University (1949).</li>
 <li>R. Rannacher, "Finite element solution of diffusion problems with irregular data", <em>Numer. Math.</em> 43 (1984) 309–327.</li>
@@ -271,7 +271,7 @@ export const chapter = {
 <li>D. L. Scharfetter and H. K. Gummel, "Large-signal analysis of a silicon Read diode oscillator", <em>IEEE Trans. Electron Devices</em> 16 (1969) 64–77.</li>
 <li>S. V. Patankar, <em>Numerical Heat Transfer and Fluid Flow</em> (Hemisphere, 1980), ch. 5.</li>
 <li>K. W. Morton and D. F. Mayers, <em>Numerical Solution of Partial Differential Equations</em>, 2nd ed. (Cambridge, 2005), ch. 2: explicit and implicit schemes, the θ-method and the maximum principle.</li>
-<li>R. D. Richtmyer and K. W. Morton, <em>Difference Methods for Initial-Value Problems</em>, 2nd ed. (Wiley, 1967): Richardson's and Du Fort–Frankel's schemes.</li>
+<li>R. D. Richtmyer and K. W. Morton, <em>Difference Methods for Initial-Value Problems</em>, 2nd ed. (Interscience, 1967): Richardson's and Du Fort–Frankel's schemes.</li>
 <li>R. J. LeVeque, <em>Finite Difference Methods for Ordinary and Partial Differential Equations</em> (SIAM, 2007), ch. 7–9: stability regions, stiffness and the method of lines.</li>
 <li>E. Hairer and G. Wanner, <em>Solving Ordinary Differential Equations II: Stiff and Differential-Algebraic Problems</em>, 2nd ed. (Springer, 1996).</li>
 <li>J. D. Lambert, <em>Numerical Methods for Ordinary Differential Systems</em> (Wiley, 1991), ch. 6: what stiffness is, and why the stiffness ratio is not a definition.</li>

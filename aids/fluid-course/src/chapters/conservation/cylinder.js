@@ -166,7 +166,7 @@ export function mountConservationCylinder(fig, ctx) {
         const nx = Math.cos(a);
         const ny = Math.sin(a);
         const cpk = flow.surfaceCp(a);
-        let L = 0.07 * Math.abs(cpk);
+        let L = 0.1 * Math.abs(cpk);
         if (L > 0.42) L = 0.42;
         if (L * view.s < 3) continue;
         const sx = p.x0 + p.R * nx;

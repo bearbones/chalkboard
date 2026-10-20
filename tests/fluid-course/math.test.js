@@ -38,7 +38,10 @@ test('environments', () => {
   const m = inner('\\begin{aligned} a &= b \\\\ c &= d \\end{aligned}');
   assert.equal((m.match(/<mtr>/g) || []).length, 2);
   assert.equal((m.match(/<mtd/g) || []).length, 4);
-  assert.match(inner('\\begin{pmatrix} 1 & 2 \\\\ 3 & 4 \\end{pmatrix}'), /^<mrow><mo stretchy="true" fence="true">\(<\/mo><mtable>/);
+  assert.match(inner('\\begin{pmatrix} 1 & 2 \\\\ 3 & 4 \\end{pmatrix}'), /^<mrow><mo stretchy="true" fence="true">\(<\/mo><mtable class="matrix">/);
+  // A continuation row that opens with & keeps its empty first cell.
+  const cont = inner('\\begin{aligned} a &= b \\\\ &= c \\end{aligned}').match(/<mtr>.*?<\/mtr>/g)[1];
+  assert.match(cont, /^<mtr><mtd style="text-align:right"><\/mtd><mtd style="text-align:left">/);
   assert.match(inner('\\begin{cases} 1 & x>0 \\\\ 0 & x \\le 0 \\end{cases}'), /fence="true">\{<\/mo>/);
 });
 

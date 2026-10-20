@@ -54,10 +54,16 @@ export const superscript = (n) => String(n).replace(/[-0-9]/g, (c) => SUP[c]);
 // 1.2 × 10⁻³
 export function sci(v, digits = 2) {
   if (v === 0) return '0';
-  const e = Math.floor(Math.log10(Math.abs(v)));
-  const m = v / 10 ** e;
-  const ms = Number(m.toFixed(digits - 1));
+  let e = Math.floor(Math.log10(Math.abs(v)));
+  let ms = Number((v / 10 ** e).toFixed(digits - 1));
+  // 9.96 rounds to 10.0: carry into the exponent.
+  if (Math.abs(ms) >= 10) {
+    e += 1;
+    ms = Number((v / 10 ** e).toFixed(digits - 1));
+  }
   const sign = ms < 0 ? '−' : '';
-  if (Math.abs(ms) === 1) return `${sign}10${superscript(e)}`;
-  return `${sign}${Math.abs(ms)} × 10${superscript(e)}`;
+  // Only an exact power of ten drops its mantissa; 1.04e-5 keeps "1.0 ×".
+  if (Math.abs(Math.abs(v) / 10 ** e - 1) < 1e-12) return e === 0 ? `${sign}1` : `${sign}10${superscript(e)}`;
+  const mant = Math.abs(ms) === 1 && digits > 1 ? (1).toFixed(digits - 1) : Math.abs(ms);
+  return `${sign}${mant} × 10${superscript(e)}`;
 }

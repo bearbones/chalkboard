@@ -64,6 +64,7 @@ export function mountChannel(fig, { signal }) {
   const rect = { s: 1, x: 0, y: 0, w: 1, h: 1 };
   let fit = null;
   let tempEMA = 1;
+  let seed = 1;
 
   for (let j = 0; j < NS; j++) {
     ys[j] = (j + 0.5) / NS;
@@ -71,8 +72,8 @@ export function mountChannel(fig, { signal }) {
   }
 
   function params() {
-    if (mode === 'couette') return { ...MD_PRESETS.couette.params, flow: null, accommodation: alpha, seed: 1 };
-    return { ...MD_PRESETS.poiseuille.params, accommodation: alpha, seed: 1 };
+    if (mode === 'couette') return { ...MD_PRESETS.couette.params, flow: null, accommodation: alpha, seed };
+    return { ...MD_PRESETS.poiseuille.params, accommodation: alpha, seed };
   }
 
   // Steady continuum profile with no slip, as a function of η = y/L.
@@ -155,7 +156,9 @@ export function mountChannel(fig, { signal }) {
   button(f.controls, {
     label: 'Restart',
     kind: 'ghost',
+    title: 'Start again from rest with a fresh set of molecules',
     onClick: () => {
+      seed++;
       restart();
       draw();
     },
@@ -266,10 +269,12 @@ export function mountChannel(fig, { signal }) {
       rSlip.set('–');
     }
     let s;
-    const tD = (md.Ly * md.Ly) / (Math.PI * Math.PI * NU);
+    // Slowest mode excited by the start-up: n = 1 for the pushed channel;
+    // n = 2 for walls sliding in opposite directions (the odd modes vanish).
+    const tD = (md.Ly * md.Ly) / ((mode === 'couette' ? 4 : 1) * Math.PI * Math.PI * NU);
     if (alpha < 0.05) s = mode === 'couette' ? 'No grip: molecules bounce off the walls like mirrors, so the sliding walls pass on no momentum and the gas stays at rest.' : 'No grip: the walls cannot take any momentum away, so the whole gas slides as a plug and speeds up for ever.';
     else if (md.t < 0.3 * tD) s = mode === 'couette' ? 'The walls drag the nearest molecules; the momentum has not yet diffused into the middle.' : 'The push acts everywhere, but the walls hold the edges back.';
-    else if (md.t < SETTLE[mode]) s = `Momentum is diffusing across the gap: the viscous time L²/(π²ν) is about ${fmt(tD, 2)} τ.`;
+    else if (md.t < Math.min(SETTLE[mode], 3 * tD)) s = `${mode === 'couette' ? 'Momentum is diffusing in from both walls: the viscous time L²/(4π²ν) is about' : 'Momentum is diffusing to the walls: the viscous time L²/(π²ν) is about'} ${fmt(tD, 2)} τ.`;
     else s = mode === 'couette' ? 'Settled: a straight profile, as Newton supposed, with a little slip at each wall.' : 'Settled: the push is balanced by viscous friction, and the profile is a parabola.';
     if (s !== lastStatus) {
       f.status.textContent = s;

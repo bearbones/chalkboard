@@ -94,10 +94,12 @@ export function mountConservationBox(fig, ctx) {
   const loop = animate(fig, tick, { signal: ctx.signal });
   playButton(ui.controls, loop, { label: 'Play' });
   button(ui.controls, {
-    label: 'Centre on the source',
+    label: 'Centre the box',
     onClick: () => {
-      cx = flow.params.x0 ?? 0;
-      cy = flow.params.y0 ?? 0;
+      // On the core, vortex, stagnation point or body; mid-domain otherwise.
+      const d = view.domain;
+      cx = flow.params.x0 ?? 0.5 * (d.xmin + d.xmax);
+      cy = flow.params.y0 ?? 0.5 * (d.ymin + d.ymax);
       placeBox();
       draw();
     },

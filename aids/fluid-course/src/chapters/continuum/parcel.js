@@ -43,6 +43,9 @@ export function mountParcel(fig, { signal }) {
   let t0 = 0;
   let inTag = 0;
   let inAll = 0;
+  let sAll = 0; // running sums of the total count, for its rms jitter
+  let sAll2 = 0;
+  let nAll = 0;
   const rect = { s: 1, x: 0, y: 0, w: 1, h: 1 };
   const oneX = [0, T_END];
   const oneY = [1, 1];
@@ -60,6 +63,9 @@ export function mountParcel(fig, { signal }) {
     }
     t0 = md.t;
     nRec = 0;
+    sAll = 0;
+    sAll2 = 0;
+    nAll = 0;
     count();
     record();
   }
@@ -79,6 +85,9 @@ export function mountParcel(fig, { signal }) {
         if (tag[i]) inTag++;
       }
     }
+    sAll += inAll;
+    sAll2 += inAll * inAll;
+    nAll++;
   }
 
   function record() {
@@ -104,6 +113,7 @@ export function mountParcel(fig, { signal }) {
   const rTime = readout(f.readouts, { label: 'time t (τ)' });
   const rTag = readout(f.readouts, { label: 'tagged molecules still inside' });
   const rAll = readout(f.readouts, { label: 'all molecules inside' });
+  const rJit = readout(f.readouts, { label: 'rms jitter of the total', title: 'standard deviation of the total count inside, over its mean, since tagging; compared with 1/√N for independent molecules' });
 
   function drawBox() {
     const { ctx, width: W, height: H } = box;
@@ -136,6 +146,11 @@ export function mountParcel(fig, { signal }) {
     rTime.set(fmt(t, 3));
     rTag.set(`${inTag} of ${n0}`);
     rAll.set(`${inAll} (started at ${n0})`);
+    if (nAll >= 50) {
+      const m = sAll / nAll;
+      const sd = Math.sqrt(Math.max(0, sAll2 / nAll - m * m));
+      rJit.set(`${fmt((100 * sd) / m, 2)}% (1/√N: ${fmt(100 / Math.sqrt(n0), 2)}%)`);
+    } else rJit.set('measuring…');
     let s;
     if (t < 3) s = 'Every coloured molecule starts inside the parcel.';
     else if (t < T_END) s = `${Math.round((100 * (n0 - inTag)) / n0)}% of the original molecules have left, yet the parcel still holds about as many molecules as it started with.`;

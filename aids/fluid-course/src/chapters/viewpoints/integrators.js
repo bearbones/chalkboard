@@ -246,8 +246,10 @@ export function mountIntegrators(fig, ctx) {
       s = `${method === 'euler' ? 'Explicit Euler' : method === 'rk4' ? 'RK4' : 'Midpoint'}: every step multiplies the radius by ${G.toFixed(6)}, so the particle spirals out, × ${per < 1e4 ? fmt(per, 4) : sci(per, 2)} per turn.`;
       if (method === 'rk4') s += ' Above ΩΔt = 2√2 ≈ 2.83 even RK4 is unstable here.';
       if (method === 'euler') s += ' No step is small enough to stop it; a smaller step only slows it.';
-    } else {
+    } else if (per > 0.999) {
       s = `RK4 below ΩΔt = 2√2: |G| = ${G.toFixed(10)}, a slow inward drift (× ${fmt(per, 6)} per turn) that you cannot see at this scale.`;
+    } else {
+      s = `RK4 below ΩΔt = 2√2 is stable, but at this step |G| = ${G.toFixed(6)} < 1: the particle spirals inward, × ${fmt(per, 3)} per turn. Stable is not the same as accurate.`;
     }
     if (ui.status.textContent !== s) ui.status.textContent = s;
   }

@@ -490,6 +490,8 @@ class Parser {
       }
       if (tok.t === '&') {
         this.next();
+        // A row that opens with & has an empty first cell.
+        if (!rows[rows.length - 1].length) rows[rows.length - 1].push([]);
         rows[rows.length - 1].push(null);
         continue;
       }
@@ -524,7 +526,7 @@ class Parser {
             .join('')}</mtr>`,
       )
       .join('');
-    const cls = isAligned || name === 'gathered' || name === 'gather' ? ' class="aligned"' : name === 'cases' ? ' class="cases"' : '';
+    const cls = isAligned || name === 'gathered' || name === 'gather' ? ' class="aligned"' : name === 'cases' ? ' class="cases"' : /matrix$|^array$/.test(name) ? ' class="matrix"' : '';
     const table = `<mtable${cls}${isAligned || name === 'cases' ? ' displaystyle="true"' : ''}>${body}</mtable>`;
     const f = MATRIX_FENCES[name];
     if (!f && !isAligned && !/^(gathered|gather|array)$/.test(name)) throw new TexError(`unknown environment ${name}`);

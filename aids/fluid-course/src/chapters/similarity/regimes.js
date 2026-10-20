@@ -101,7 +101,8 @@ export function mountSimilarityRegimes(fig) {
         if ((e - S.lo) % every === 0) ctx.fillText(e === 0 ? '1' : `10${superscript(e)}`, x, y + 6);
       }
       // thresholds
-      for (const [v, text] of S.marks) {
+      for (let m = 0; m < S.marks.length; m++) {
+        const [v, text] = S.marks[m];
         const x = X(v);
         ctx.strokeStyle = pal.css('accent', 0.7);
         ctx.setLineDash([3, 3]);
@@ -111,8 +112,10 @@ export function mountSimilarityRegimes(fig) {
         ctx.stroke();
         ctx.setLineDash([]);
         ctx.fillStyle = pal.css('accent');
-        ctx.textAlign = 'center';
-        ctx.fillText(text, x, y + 20);
+        // Two marks on one strip can sit close together: push their labels apart.
+        const two = S.marks.length === 2;
+        ctx.textAlign = two ? (m === 0 ? 'right' : 'left') : 'center';
+        ctx.fillText(text, two ? x + (m === 0 ? -3 : 3) : x, y + 20);
       }
       // every scenario, faint
       for (const s of SCENARIOS) {

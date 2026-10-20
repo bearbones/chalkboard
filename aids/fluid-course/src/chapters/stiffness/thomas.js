@@ -15,6 +15,8 @@ const PRESETS = {
 const N = 10; // intervals: 9 unknowns
 const NF = 161;
 const FONT = '"Atkinson Hyperlegible", system-ui, sans-serif';
+const SUB = '₀₁₂₃₄₅₆₇₈₉';
+const sub = (j) => String(j).replace(/[0-9]/g, (d) => SUB[d]);
 
 export function mountThomas(fig, { signal }) {
   const p = presetFor(fig, PRESETS);
@@ -86,7 +88,7 @@ export function mountThomas(fig, { signal }) {
     flops = 0;
     pivot = NaN;
     lastVal = '–';
-    narr = `Assembled ${m} equations, one per interior node: the new u_j appears with its two neighbours, so the matrix is tridiagonal. Press Next operation.`;
+    narr = `Assembled ${m} equations, one per interior node: each new value appears with its two neighbours, so the matrix is tridiagonal. Press Next operation.`;
     draw();
   }
 
@@ -126,7 +128,7 @@ export function mountThomas(fig, { signal }) {
         const cost = e.row === m - 1 ? 0 : 2;
         flops += cost;
         lastVal = `x = ${num(e.x)}`;
-        narr = e.row === m - 1 ? `Back substitution starts at the bottom: the last row now reads u_${j} = d′, so x = ${num(e.x)} (no arithmetic).` : `u_${j} = d′ − c′ u_${j + 1} = ${num(e.x)} (${cost} flops).`;
+        narr = e.row === m - 1 ? `Back substitution starts at the bottom: the last row now reads u${sub(j)} = d′, so x = ${num(e.x)} (no arithmetic).` : `u${sub(j)} = d′ − c′ u${sub(j + 1)} = ${num(e.x)} (${cost} flops).`;
       }
       return;
     }
@@ -175,6 +177,8 @@ export function mountThomas(fig, { signal }) {
     const xr = x0 + S + 12;
     const wc = Math.max(20, (W - xr - 4) / 3);
     const fs = Math.max(9, Math.min(12, c * 0.48, wc * 0.26));
+    const cellFs = Math.max(8, Math.min(12, c * 0.46));
+    const digits = c >= 28 ? 2 : 1;
     ctx.font = `${fs}px ${FONT}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -196,18 +200,18 @@ export function mountThomas(fig, { signal }) {
         let gone = false;
         if (k === i - 1) {
           gone = i <= elim;
-          text = num(s.lower[i], 2);
+          text = num(s.lower[i], digits);
         } else if (k === i) {
           if (i <= elim) {
             fill = 's1';
             text = '1';
-          } else text = num(s.diag[i], 2);
+          } else text = num(s.diag[i], digits);
         } else {
           if (i >= back) gone = true;
           else if (i <= elim) {
             fill = 's1';
-            text = num(s.cp[i], 2);
-          } else text = num(s.upper[i], 2);
+            text = num(s.cp[i], digits);
+          } else text = num(s.upper[i], digits);
         }
         if (gone) {
           ctx.strokeStyle = pal.css('grid');
@@ -217,9 +221,11 @@ export function mountThomas(fig, { signal }) {
         }
         ctx.fillStyle = pal.css(fill, alpha);
         ctx.fillRect(x + 1, y + 1, c - 2, c - 2);
-        if (c >= 28) {
+        if (c >= 18) {
+          ctx.font = `${cellFs}px ${FONT}`;
           ctx.fillStyle = pal.css('ink');
           ctx.fillText(text, x + c / 2, y + c / 2);
+          ctx.font = `${fs}px ${FONT}`;
         }
       }
       // working columns

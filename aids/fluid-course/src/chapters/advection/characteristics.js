@@ -147,6 +147,9 @@ export function mountCharacteristics(fig, { signal }) {
     ctx.fillText('0', R.x0 - 6, Y(0) - 6);
     ctx.fillText('1', R.x0 - 6, Y(1) + 6);
     ctx.textAlign = 'left';
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = pal.css('board');
+    ctx.strokeText('foot', Math.min(X(foot) + 8, X(1) - 30), Y(0) - 10);
     ctx.fillStyle = pal.css('ink');
     ctx.fillText('foot', Math.min(X(foot) + 8, X(1) - 30), Y(0) - 10);
 

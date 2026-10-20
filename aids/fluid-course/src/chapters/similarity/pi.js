@@ -184,7 +184,10 @@ export function mountSimilarityPi(fig) {
     const unused = res.repeating.filter((id) => res.groups.every((g) => g.exponents[res.vars.indexOf(id)] === 0));
     const msgs = [`${res.n} variables, rank ${res.rank}, so ${res.count} group${res.count > 1 ? 's' : ''}.`];
     if (res.repeating.includes(first)) msgs.push(`You made ${nameOf(first)} a repeating variable: legal, but now it hides inside every group and you cannot solve for it.`);
-    else if (unused.length) msgs.push(`${unused.map(nameOf).join(' and ')} appears in no group, so it cannot matter.`);
+    else if (unused.length) {
+      const who = unused.map(nameOf).join(' and ');
+      msgs.push(`${who.charAt(0).toUpperCase()}${who.slice(1)} appears in no group, so it cannot matter.`);
+    }
     else if (res.count === 1) msgs.push('One group: it must be a constant. Dimensions alone fix the law up to one number.');
     else if (res.count === 2) msgs.push('Π₁ = φ(Π₂): one curve from experiment covers every size, speed and fluid.');
     else msgs.push(`Π₁ depends on ${res.count - 1} groups: still far fewer experiments than varying all ${res.n - 1} variables one at a time.`);

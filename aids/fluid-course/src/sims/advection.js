@@ -55,7 +55,7 @@
 //                   W_{j-1/2} = u_j − u_{j-1},  θ_{j-1/2} = W_{I-1/2}/W_{j-1/2},  I = j − sign(ν).
 //                 φ = 0, 1, θ, (1 + θ)/2 give upwind, Lax–Wendroff, Beam–Warming and Fromm
 //                 exactly (offered as limiters 'upwind', 'lw', 'bw', 'fromm'). The TVD
-//                 limiters minmod, superbee (Roe 1986), van Leer (1974), MC (van Leer 1977)
+//                 limiters minmod, superbee (due to Roe; credited in Sweby 1984), van Leer (1974), MC (van Leer 1977)
 //                 and van Albada (van Albada, van Leer & Roberts 1982) lie in Sweby's (1984)
 //                 TVD region, so the method is TVD for |ν| ≤ 1 (Harten 1983).
 //                 Deviation: van Albada's φ = (θ² + θ)/(θ² + 1) is negative for −1 < θ < 0;
@@ -138,7 +138,7 @@ export const LIMITERS = {
     description: 'Runs along the upper edge of the TVD region: the sharpest jumps, but it squares off smooth peaks.',
     phi: (t) => Math.max(0, Math.min(1, 2 * t), Math.min(2, t)),
     tex: '\\phi(\\theta) = \\max\\left(0, \\min(1, 2\\theta), \\min(2, \\theta)\\right)',
-    cite: 'Roe (1986); LeVeque (2002) ch. 6',
+    cite: 'due to Roe, credited in Sweby (1984); Roe (1986); LeVeque (2002) ch. 6',
   },
   vanleer: {
     id: 'vanleer', name: 'van Leer', tvd: true,

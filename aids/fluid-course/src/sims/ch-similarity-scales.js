@@ -11,16 +11,21 @@
 //   (d) The complementary error function, and the self-similar collapse of
 //       the heat-equation step (u = 1/2 erfc((x - 1/2)/sqrt(4 kappa t))),
 //       measured on the Crank-Nicolson solver of diffusion.js.
+//   (e) Lattice units: what a target Reynolds number costs a lattice
+//       Boltzmann run (relaxation time, Mach number, cells and steps), using
+//       the unit conversions of lbm.js.
 //
 // Conventions and units
 //   SI units throughout; temperatures in degrees Celsius. No grids here
 //   except the 1D heat grid of diffusion.js (nodes x_j = j/n on [0, 1]).
 //
 // Sources
-//   Water viscosity: CRC Handbook of Chemistry and Physics, 85th ed. (2004),
-//     p. 6-201 (0-60 degC, mPa s). Density: CRC p. 6-15 and Lange's Handbook,
-//     15th ed. (1999), p. 1199. ln(mu) and rho are interpolated linearly in T
-//     between table rows.
+//   Water viscosity: the IAPWS 2008 formulation at 0.1 MPa, M. L. Huber et
+//     al., J. Phys. Chem. Ref. Data 38 (2009) 101, rounded to 4 figures.
+//     Density: IAPWS-95 at 0.1 MPa, W. Wagner and A. Pruss, J. Phys. Chem.
+//     Ref. Data 31 (2002) 387, rounded to 0.01 kg/m^3. ln(mu) and rho are
+//     interpolated linearly in T between table rows (within about 0.5% of
+//     the formulation between rows).
 //   Reynolds's tubes and thresholds: Reynolds, Phil. Trans. R. Soc. 174
 //     (1883) 935 (bores of nearly 1, 1/2 and 1/4 inch); thresholds converted
 //     to modern Reynolds numbers by N. Rott, Annu. Rev. Fluid Mech. 22 (1990)
@@ -33,6 +38,8 @@
 //   erfc: power series for |x| < 2.5, Lentz-style continued fraction beyond
 //     (Abramowitz & Stegun 7.1.5 and 7.1.14); against a library erfc the
 //     absolute error is below 1e-15 and the relative error below 1e-12.
+//   Lattice units: nu = (tau - 1/2)/3 and c_s = 1/sqrt(3) for D2Q9 (lbm.js);
+//     the box of 20 D by 6 D is the hero preset of lbm.js (240 x 72, D = 12).
 //   Intermediate asymptotics: Barenblatt, Scaling, Self-similarity and
 //     Intermediate Asymptotics (Cambridge, 1996), ch. 2.
 //
@@ -44,28 +51,35 @@
 //     large late steps are harmless because the profile is smooth by then.
 
 import { step } from './diffusion.js';
+import { suggestTau, viscosity } from './lbm.js';
 
 // ---------------------------------------------------------------------------
 // (a) Water
 
-// [T degC, mu mPa s] from the CRC Handbook (85th ed.), p. 6-201.
+// [T degC, mu mPa s] at 0.1 MPa (IAPWS 2008; Huber et al. 2009).
 export const WATER_VISCOSITY_TABLE = [
-  [0, 1.7921],
-  [10, 1.3077],
-  [20, 1.005],
-  [30, 0.8007],
-  [40, 0.656],
-  [50, 0.5494],
-  [60, 0.4688],
+  [0, 1.791],
+  [5, 1.518],
+  [10, 1.306],
+  [15, 1.138],
+  [20, 1.002],
+  [25, 0.89],
+  [30, 0.7972],
+  [40, 0.6527],
+  [50, 0.5465],
+  [60, 0.4665],
 ];
 
-// [T degC, rho kg/m^3] (CRC p. 6-15; Lange p. 1199).
+// [T degC, rho kg/m^3] at 0.1 MPa (IAPWS-95; Wagner and Pruss 2002).
 export const WATER_DENSITY_TABLE = [
   [0, 999.84],
   [4, 999.97],
+  [10, 999.7],
   [20, 998.21],
-  [40, 992.21],
-  [60, 983.21],
+  [30, 995.65],
+  [40, 992.22],
+  [50, 988.03],
+  [60, 983.2],
 ];
 
 export const WATER_T_RANGE = [0, 60];
@@ -126,7 +140,8 @@ export const criticalSpeed = (Re, D, T) => (Re * waterNu(T)) / D;
 
 // What the dye does at Re for a given inlet: 'direct' below the lower value,
 // 'direct-unstable' between the lower value and the inlet's limit (laminar,
-// but a disturbance would grow), 'sinuous' beyond the inlet's limit.
+// but a large enough disturbance would no longer die out), 'sinuous' beyond
+// the inlet's limit.
 export function dyeRegime(Re, inlet = 'still') {
   const limit = REYNOLDS_INLETS[inlet]?.Re ?? REYNOLDS_THRESHOLDS.upper;
   if (Re < REYNOLDS_THRESHOLDS.lower) return 'direct';
@@ -232,4 +247,35 @@ export function similarityGap(state) {
     if (d > worst) worst = d;
   }
   return worst;
+}
+
+// ---------------------------------------------------------------------------
+// (e) Lattice units
+
+// Box of the lattice plan, in cylinder diameters (the hero preset of lbm.js).
+export const LATTICE_BOX = [20, 6];
+
+// What it takes to run a cylinder at Reynolds number Re with D cells across
+// it and inflow speed U (cells per step) in a 20 D x 6 D box:
+// tau from lbm.js suggestTau, the lattice viscosity, Ma = U / c_s = U sqrt 3,
+// the cell count, steps for the fluid to cross the box once, cell updates
+// for that crossing, and D / sqrt(Re), the order of magnitude of the number
+// of cells across the boundary layer on the cylinder (delta ~ D Re^-1/2).
+export function latticePlan(Re, U, D) {
+  const tau = suggestTau(Re, U, D);
+  const nx = LATTICE_BOX[0] * D;
+  const ny = LATTICE_BOX[1] * D;
+  const cells = nx * ny;
+  const steps = nx / U;
+  return {
+    tau,
+    nu: viscosity(tau),
+    Ma: U * Math.sqrt(3),
+    nx,
+    ny,
+    cells,
+    steps,
+    updates: cells * steps,
+    layerCells: D / Math.sqrt(Re),
+  };
 }

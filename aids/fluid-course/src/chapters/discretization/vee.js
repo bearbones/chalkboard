@@ -123,7 +123,7 @@ export function mountV(fig) {
     else if (prec === 'f64' && x0 + hh === x0) msg = `x₀ + h == x₀ in double precision: the step has vanished and every difference formula returns 0. Only the complex step still works.`;
     else if (hh > 3 * hb) msg = `Truncation dominates the central difference here (error ∝ h²): shrinking h helps. Its best is near h ≈ ${sci(hb, 1)} in ${prc} precision.`;
     else if (hh < hb / 3) msg = `Round-off dominates the central difference here (error ∝ 1/h): shrinking h makes it worse. The complex step has no subtraction, so it does not care.`;
-    else msg = `Near the bottom of the central difference's V: truncation and round-off are about equal, and you get about ${digits(D.best.central.rel).toFixed(0)} digits.`;
+    else msg = `Near the bottom of the central difference's V: truncation and round-off are about equal. At its best step, h ≈ ${sci(hb, 1)}, it gives ${digits(D.best.central.rel).toFixed(1)} digits in ${prc} precision.`;
     f.status.textContent = msg;
   }
   recompute();
@@ -132,9 +132,21 @@ export function mountV(fig) {
 // ---------------------------------------------------------------------------
 // discretization-cancel
 
+// Reader-facing notes in typeset Unicode (the kernel's notes are plain ASCII
+// for tests and logs); the facts are the kernel's, verified in
+// tests/fluid-course/ch-discretization.test.js.
+const CANCEL_NOTES = {
+  'one-minus-cos': 'cos x is stored to within u of 1, so every digit of x²/2 below u is lost. Below x = 2^−26.5 ≈ 1.05 × 10⁻⁸, where x²/2 drops under 2⁻⁵⁴ (half the spacing of doubles just below 1), the naive form returns exactly 0.',
+  quadratic: 'For large b, √(b² − 4) ≈ b, so the naive numerator subtracts two nearly equal numbers. Multiplying by the conjugate (Vieta) removes the subtraction.',
+  'sqrt-diff': 'The same conjugate trick. At x = 10¹⁶, x + 1 rounds to x and the naive difference is exactly 0.',
+  expm1: 'Libraries provide expm1 and log1p precisely because eˣ − 1 and log(1 + x) cancel for small x.',
+  'gauge-pressure': 'Near 101 325 Pa, single precision has a spacing of 2⁻⁷ ≈ 0.0078 Pa, so adding and then subtracting atmospheric pressure costs up to 2⁻⁸ ≈ 0.0039 Pa. A pressure difference of a few millipascals stored on top of atmospheric pressure is mostly rounding. Codes solve for a gauge or perturbation pressure for this reason.',
+};
+const X_LABELS = { quadratic: 'b', 'gauge-pressure': 'height difference Δz (m)' };
 const C_PRESETS = {
   default: { id: 'one-minus-cos', x: 1e-6 },
   quadratic: { id: 'quadratic', x: 1e6 },
+  sqrt: { id: 'sqrt-diff', x: 1e12 },
   gauge: { id: 'gauge-pressure', x: 1e-4 },
   expm1: { id: 'expm1', x: 1e-10 },
 };
@@ -153,7 +165,10 @@ export function mountCancel(fig) {
   const note = h('p', { style: { margin: 0, fontSize: '0.88rem', color: 'var(--muted)' } });
   f.stage.append(note);
   const sel = select(f.controls, { label: 'Example', options: Object.values(CANCELLATION).map((E) => [E.id, E.name]), value: P.id, onChange: () => recompute(true) });
-  const xS = slider(f.controls, { label: 'x', min: 1e-10, max: 0.1, log: true, value: P.x, fmt: (v) => sci(v, 2), onInput: () => draw() });
+  // The slider's range is the chosen example's: build it with the preset's
+  // range, or the browser clamps the preset x before recompute can widen it.
+  const E0 = CANCELLATION[P.id];
+  const xS = slider(f.controls, { label: 'x', min: E0.xMin, max: E0.xMax, log: true, value: P.x, fmt: (v) => sci(v, 2), onInput: () => draw() });
   const nvR = readout(f.readouts, { label: 'naive value' });
   const svR = readout(f.readouts, { label: 'rearranged value' });
   const ndR = readout(f.readouts, { label: 'naive: correct digits' });
@@ -171,7 +186,10 @@ export function mountCancel(fig) {
     xS.input.max = Math.log10(E.xMax);
     if (resetX) xS.set(Math.sqrt(E.xMin * E.xMax), { silent: true });
     else xS.set(Math.min(E.xMax, Math.max(E.xMin, xS.value)), { silent: true });
-    plot.setAxes({ x: { min: E.xMin, max: E.xMax } });
+    const xl = X_LABELS[E.id] ?? 'x';
+    plot.setAxes({ x: { min: E.xMin, max: E.xMax, label: xl } });
+    const lab = xS.el.querySelector('.ctl-label')?.firstChild;
+    if (lab) lab.nodeValue = xl;
     let html = '';
     try {
       html = `<div>naive: ${tex(E.tex)}</div><div>rearranged: ${tex(E.texStable)}</div>`;
@@ -179,7 +197,7 @@ export function mountCancel(fig) {
       html = `<div>naive: ${E.tex}</div><div>rearranged: ${E.texStable}</div>`;
     }
     forms.innerHTML = html;
-    note.textContent = E.note;
+    note.textContent = CANCEL_NOTES[sel.value] ?? E.note;
     draw();
   }
 

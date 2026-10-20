@@ -29,7 +29,7 @@ const FORMULAS = [
   { id: 'central4', name: 'Fourth order', color: 's4', dash: [11, 4, 2, 4] },
 ];
 const STENCIL_PRESETS = {
-  default: { fn: 'squire-trapp', x0: 1.5, h: 0.2 },
+  default: { fn: 'squire-trapp', x0: 1.5, h: 0.1 },
   sin0: { fn: 'sin', x0: 0, h: 0.2 },
   exp: { fn: 'exp', x0: 1, h: 0.1 },
 };
@@ -130,7 +130,8 @@ export function mountStencil(fig) {
     tanR.set(best.name);
     const [pf, , pc, p4] = orders;
     let msg = `Halve h: forward error ÷ ${(2 ** pf).toFixed(1)}, central ÷ ${(2 ** pc).toFixed(1)}, fourth order ÷ ${(2 ** p4).toFixed(1)}.`;
-    if (pf > 1.6) msg = `The forward difference looks second order here: f″(x₀) = 0, so its h/2 · f″ term vanishes. ${msg}`;
+    if (Math.abs(p4 - 4) > 0.4 && hh < 0.01) msg = `The fourth-order error is now so small that round-off spoils its ratio (measured order ${p4.toFixed(1)}): see the next section. ${msg}`;
+    else if (pf > 1.6) msg = `The forward difference looks second order here: f″(x₀) = 0, so its h/2 · f″ term vanishes. ${msg}`;
     else if (hh > 0.25) msg = `h is large: the higher-order formulas are not yet in their asymptotic range. ${msg}`;
     f.status.textContent = msg;
   }
@@ -157,13 +158,13 @@ export function mountWeights(fig) {
   const f = frame(fig, { title: 'Build a stencil from Taylor series' });
   const formula = h('div', { style: { overflowX: 'auto', minHeight: '3.2em' }, 'aria-live': 'polite' });
   f.stage.append(formula);
-  const plot = new Plot(f.stage, { x: { label: 'step h', log: true, min: 1e-3, max: 1 }, y: { label: '|error| on sin x at x = 0.7', log: true }, aspect: 2, label: 'Measured error of the stencil against h, beside its predicted leading term' });
+  const plot = new Plot(f.stage, { x: { label: 'step h', log: true, min: 1e-6, max: 1 }, y: { label: '|error| on sin x at x = 0.7', log: true }, aspect: 2, label: 'Measured error of the stencil against h, beside its predicted leading term' });
 
-  const NH = 49;
+  const NH = 73;
   const hx = new Float64Array(NH);
   const ey = new Float64Array(NH);
   const py = new Float64Array(NH);
-  for (let k = 0; k < NH; k++) hx[k] = 10 ** (-3 + (3 * k) / (NH - 1));
+  for (let k = 0; k < NH; k++) hx[k] = 10 ** (-6 + (6 * k) / (NH - 1));
 
   const chipRow = h('div.ctl', { role: 'group', 'aria-label': 'Stencil points' }, h('span.ctl-label', 'points x_j + kh, k ='));
   const chips = h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '2px 10px' } });
@@ -221,8 +222,8 @@ export function mountWeights(fig) {
     cR.set(`${C.n < 0 ? '−' : ''}${Math.abs(C.n)}${C.d === 1 ? '' : '/' + C.d} · h${st.order === 1 ? '' : superscriptDigits(st.order)}`);
     sR.set(Number.isFinite(slope) ? slope.toFixed(2) : '–', Math.abs(slope - st.order) < 0.15 ? 'good' : '');
     plot.draw([
-      { x: hx, y: py, color: 'muted', width: 1.5, dash: [5, 4], label: `predicted ${fmt(Math.abs(C.value), 3)} h^${st.order} |f^(${st.errorPower})|` },
       { x: hx, y: ey, color: 's1', width: 2.5, label: 'measured error' },
+      { x: hx, y: py, color: 'ink', width: 1.5, dash: [5, 4], label: `predicted ${fmt(Math.abs(C.value), 3)} h${superscriptDigits(st.order)} |f⁽${superscriptDigits(st.errorPower)}⁾|` },
     ]);
     const sym = st.offsets.every((s) => st.offsets.includes(-s));
     const free = st.order > st.offsets.length - m;

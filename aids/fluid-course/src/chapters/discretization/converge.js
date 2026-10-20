@@ -56,8 +56,10 @@ export function mountConvergence(fig, { signal }) {
   function drawPlot() {
     const e0 = count ? Math.min(clampLog(ey[0], 1e-300), 1e3) : 1;
     for (let k = 0; k < NS.length; k++) {
-      r1[k] = e0 * (NS[0] / NS[k]);
-      r2[k] = e0 * (NS[0] / NS[k]) ** 2;
+      // guides start a factor 0.4 below the first point, so they run parallel
+      // to a converging curve instead of hiding under it
+      r1[k] = 0.4 * e0 * (NS[0] / NS[k]);
+      r2[k] = 0.4 * e0 * (NS[0] / NS[k]) ** 2;
     }
     plot.draw([
       { x: NS, y: r1, color: 'muted', width: 1.3, dash: [6, 4], label: 'slope −1', hover: false, fit: count === 0 },
@@ -66,11 +68,14 @@ export function mountConvergence(fig, { signal }) {
     ]);
   }
 
+  let stopPrev = null;
   function run() {
     ctl?.abort();
+    if (stopPrev) signal?.removeEventListener('abort', stopPrev);
     ctl = new AbortController();
     const local = ctl;
     const stop = () => local.abort();
+    stopPrev = stop;
     signal?.addEventListener('abort', stop, { once: true });
     const scheme = schemeSel.value;
     const nu = nuS.value;
@@ -82,7 +87,6 @@ export function mountConvergence(fig, { signal }) {
     stepsR.set('…');
     nuR.set('…');
     drawPlot();
-    let last = null;
     let announced = 0;
     function* driver() {
       const gen = convergenceStudy(scheme, nu, NS, prof, 1, { dtExponent: p });
@@ -94,7 +98,6 @@ export function mountConvergence(fig, { signal }) {
           ex[count] = e.n;
           ey[count] = Number.isFinite(e.err) ? clampLog(e.err, 1e-300) : 1e300;
           count++;
-          last = e;
           drawPlot();
           f.status.textContent = `Ran n = ${e.n} (${e.steps.toLocaleString('en-US')} steps): error ${sci2(e.err)}.`;
         } else if (e.t === 'op' && e.n !== announced) {
@@ -107,12 +110,13 @@ export function mountConvergence(fig, { signal }) {
     sliced(driver(), { budgetMs: 6, signal: local.signal })
       .then((res) => {
         signal?.removeEventListener('abort', stop);
-        report(res, scheme, p, last);
+        if (stopPrev === stop) stopPrev = null;
+        report(res, scheme, p);
       })
       .catch(() => {});
   }
 
-  function report(res, scheme, p, last) {
+  function report(res, scheme, p) {
     const errs = res.errors;
     const o = res.orders.at(-1);
     const design = scheme === 'ftcs' && p === 2 ? 2 : SCHEMES[scheme].order;

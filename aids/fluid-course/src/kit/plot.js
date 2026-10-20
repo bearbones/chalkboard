@@ -198,6 +198,11 @@ export class Plot {
     const pal = palette();
     const items = this.series.filter((s) => s.label && s.legend !== false);
     this.legendEl.hidden = items.length < 2 && !this.opts.legendAlways;
+    // Animated plots redraw every frame; rebuild the legend only when it changes.
+    const key = items.map((s) => [s.label, s.color, s.points, s.width, s.dash, s.fill].join('|')).join('\n');
+    if (key === this.legendKey && pal === this.legendPal) return;
+    this.legendKey = key;
+    this.legendPal = pal;
     this.legendEl.replaceChildren(
       ...items.map((s) => {
         const sw = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -308,8 +313,10 @@ function fmtTick(v, step) {
   if (v === 0) return '0';
   const a = Math.abs(v);
   if (a >= 1e5 || a < 1e-3) return fmt(v, 2);
-  const dec = Math.max(0, -Math.floor(Math.log10(step) + 1e-9));
-  return (v < 0 ? '−' : '') + a.toFixed(Math.min(dec + (step / 10 ** Math.floor(Math.log10(step)) === 2.5 ? 1 : 0), 6));
+  const k = Math.floor(Math.log10(step) + 1e-9);
+  // A step of 2.5×10^k needs one more decimal, but only when it is below 10.
+  const dec = Math.max(0, -k) + (k < 1 && step / 10 ** k === 2.5 ? 1 : 0);
+  return (v < 0 ? '−' : '') + a.toFixed(Math.min(dec, 6));
 }
 
 function line(ctx, x0, y0, x1, y1) {

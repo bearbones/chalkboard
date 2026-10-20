@@ -10,7 +10,7 @@ import { REPRESENTATIONS, REP_PROFILES, quadrature, measure } from '../../sims/c
 import { sci2, figTable, swatchLabel, preset } from './common.js';
 
 const KINDS = [
-  { id: 'points', label: 'Points', color: 's1', stores: 'u_j = f(x_j)', conserved: 'nothing exactly' },
+  { id: 'points', label: 'Points', color: 's1', stores: 'point values', conserved: 'nothing exactly' },
   { id: 'averages', label: 'Averages', color: 's2', stores: 'cell means', conserved: '∫u, by definition' },
   { id: 'hats', label: 'Hats', color: 's3', stores: 'hat coefficients', conserved: '∫u, by projection' },
   { id: 'fourier', label: 'Fourier', color: 's4', stores: 'mode amplitudes', conserved: '∫u (mode 0)' },
@@ -105,14 +105,15 @@ export function mountRepresentations(fig) {
     const order = Math.log2(cur.l2 / m2.l2);
     l2R.set(sci2(cur.l2));
     ordR.set(cur.l2 < 1e-13 ? 'at round-off' : Number.isFinite(order) ? order.toFixed(2) : '–');
-    massR.set(Math.abs(cur.massErr) < 1e-13 ? '0 (round-off)' : sci2(cur.massErr), Math.abs(cur.massErr) < 1e-13 ? 'good' : 'bad');
+    massR.set(Math.abs(cur.massErr) < 1e-13 ? '0 (round-off)' : sci2(cur.massErr), Math.abs(cur.massErr) < 1e-13 ? 'good' : Math.abs(cur.massErr) > 1e-10 ? 'bad' : '');
     const os = Math.max(cur.overshoot, cur.undershoot);
     overR.set(`${(100 * os).toFixed(1)}%`, os > 0.05 ? 'bad' : '');
     let msg;
     if (kind === 'fourier' && prof === 'square') msg = `Gibbs: the truncated Fourier series overshoots each jump by about 9% of the jump, and more modes only squeeze the wiggles closer to it.`;
     else if (kind === 'fourier' && cur.l2 < 1e-12) msg = `Spectral accuracy: with ${2 * R.K + 1} smooth modes the error is already at round-off.`;
     else if (kind === 'hats' && os > 0.05) msg = `The best fit in the mean-square sense overshoots near a steep change: L² projection does not respect bounds.`;
-    else if (kind === 'points' && Math.abs(cur.massErr) > 1e-13) msg = `Point values carry no budget: their trapezoid sum misses ∫f by ${sci2(Math.abs(cur.massErr))}.`;
+    else if (kind === 'points' && Math.abs(cur.massErr) > 1e-10) msg = `Point values come with no conservation guarantee: their trapezoid sum misses ∫f by ${sci2(Math.abs(cur.massErr))}.`;
+    else if (kind === 'points' && Math.abs(cur.massErr) > 1e-13) msg = `The trapezoid sum of point values is extraordinarily accurate on smooth periodic data (it misses ∫f by only ${sci2(Math.abs(cur.massErr))}), but nothing guarantees it. Try the square wave.`;
     else if (kind === 'averages') msg = `Cell averages keep ∫f exactly at any n, but a constant per cell is only first-order accurate as a picture of f.`;
     else msg = `${REPRESENTATIONS[kind].name}: L² error ${sci2(cur.l2)}, falling at order ${Number.isFinite(order) ? order.toFixed(1) : '–'} when n doubles.`;
     f.status.textContent = msg;

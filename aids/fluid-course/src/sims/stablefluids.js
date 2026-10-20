@@ -56,16 +56,24 @@
 //   MacCormack with a limiter: A. Selle, R. Fedkiw, B. Kim, Y. Liu &
 //     J. Rossignac (2008), An unconditionally stable MacCormack method,
 //     J. Sci. Comput. 35, 350–371. q̂ = A(q), q̄ = Aᴿ(q̂),
-//     q^{n+1} = q̂ + ½(q − q̄), then 'clamp' to [min, max] of the four grid
-//     values that the first semi-Lagrangian sample interpolated (§3.2 of the
-//     paper discusses clamping; it reverts to the semi-Lagrangian value
-//     instead, our 'revert'). Either limiter can be applied to BFECC too.
+//     q^{n+1} = q̂ + ½(q − q̄), then limited by the extrema of the four grid
+//     values that the first semi-Lagrangian sample interpolated: 'clamp'
+//     clips to [min, max] (the default for MacCormack); 'revert' falls back
+//     to the semi-Lagrangian value q̂ wherever the corrected value leaves that
+//     range. Either limiter can be applied to BFECC too.
+//   Order of the step in time: whatever the advection scheme, the
+//     advect-then-project splitting is first order in Δt (the commutator of
+//     the two stages), so BFECC and MacCormack make the advection second
+//     order in space but not the whole solver second order in time (measured
+//     on the Taylor–Green vortex in the tests).
 //   Vorticity confinement: J. Steinhoff & D. Underhill (1994), Phys. Fluids
 //     6(8), 2738–2744; in the form of R. Fedkiw, J. Stam & H. W. Jensen
 //     (2001), Visual simulation of smoke, Proc. SIGGRAPH 2001, 15–22, eq. 9–11:
 //     N = ∇|ω| / |∇|ω||, f = ε h (N × ω), which in 2-D is
 //     f = ε h ω (N_y, −N_x). Evaluated at cell centres from the corner
 //     vorticity of grid2d.js averaged to centres, then averaged to faces.
+//     It is computed first in the force stage, from the advected velocity,
+//     before buoyancy and sources add their (not yet projected) impulses.
 //   Boussinesq buoyancy: Fedkiw, Stam & Jensen (2001) eq. 8,
 //     f = (−α s + β (T − T_amb)) ŷ with s the smoke density (dye channel 0)
 //     and T the temperature (T_amb = 0), averaged to v faces.
@@ -102,17 +110,36 @@
 //   Semi-Lagrangian interpolation is not conservative: Σ q(x − Δt u) ≠ Σ q.
 //   fluid.diag.dyeAdvectDelta is the change in total dye made by this step's
 //   advection alone; dyeDrift accumulates it since creation. In a closed box
-//   that is pure numerical error; through open sides it also counts outflow.
+//   that is pure numerical error; with open sides it also counts outflow,
+//   and at an inflow wall the dye carried in from the edge cells (the
+//   'obstacle' preset), so there it is not an error measure. Implicit dye
+//   diffusion (params.diffusion) conserves dye only as far as its sweeps
+//   converge, and is not included in dyeDrift.
+//   Solids: the extrapolation reaches only cells that share an edge with
+//   fluid (not the diagonal corner cells of a box), and a backtrace that
+//   ends deeper inside an obstacle (CFL > 1 next to it) reads zero dye.
 //   Kinetic energy is lost by interpolation (all schemes) and by an
 //   incompletely converged projection; the projection itself never adds
 //   energy without inflow (projection.js).
 //
-// PERFORMANCE: see PERF at the bottom of this header block in the report of
-// the course build; measured numbers are in the PRESSURE_SOLVERS metadata
-// and in recommendInteractive().
+// PERFORMANCE (node 20 on a desktop; a mid-range phone is 3–5× slower and
+// its frame budget is about 8 ms, so aim for ≤ 2 ms here)
+//   Whole step, 'stir' preset with a pointer dragging through it (CFL ≈ 5),
+//   MacCormack + RK2, two dye channels:
+//     64²   multigrid 1.3 ms   (semi-Lagrangian 0.9 ms)
+//     96²   multigrid 3.0 ms, mgpcg 3.3–3.5, Jacobi(30) 3.7–4.0,
+//           red–black(30) 4.1–4.6, MIC(0)-PCG 4.9–5.4 (semi-Lagrangian 2.0)
+//     128²  multigrid 5.3–5.7 ms, mgpcg 6.2, Jacobi(30) 6.5–7.1,
+//           red–black(30) 7.6–8.0, MIC(0)-PCG 10.8–11.4 (semi-Lagrangian 3.7)
+//   Projection alone: PRESSURE_SOLVERS[*].ms. MacCormack and BFECC cost
+//   about twice semi-Lagrangian; RK2 adds about 40 % over Euler.
+//   Recommended for phones: about 64² (4–6 k cells) with MacCormack, RK2 and
+//   warm-started multigrid (the preset defaults, 1.2–1.7 ms per step); 96²
+//   only with semi-Lagrangian advection. Fixed-sweep Jacobi is no cheaper
+//   than multigrid here and leaves max|D u| near its pre-projection size.
 
 import { rng, drain } from './util.js';
-import { macGrid, setSolid, enforceBoundary, divergence, faceDot, vorticityCentres, velocityFromStreamfunction, SOLID, FACE_FIXED, FACE_OPEN } from './grid2d.js';
+import { macGrid, setSolid, enforceBoundary, divergence, faceDot, vorticityCentres, velocityFromStreamfunction, SOLID, FACE_FIXED } from './grid2d.js';
 import { projectSteps } from './projection.js';
 
 // ---------------------------------------------------------------------------
@@ -191,10 +218,13 @@ export const LIMITERS = {
 };
 
 // Pressure solvers passed through to projection.js / poisson.js. fixed: the
-// solver runs exactly `iterations` sweeps (tol 0), as real-time codes do;
-// otherwise it runs to the relative tolerance `tol` (capped at maxIter).
-// ms128: measured cost of one projection at 128² inside the 'stir' preset
-// on node 20 on a desktop (see the report; a phone is 3–5× slower).
+// solver runs exactly params.pressureIters sweeps (tol 0), as real-time codes
+// do; otherwise it runs to the relative tolerance params.pressureTol (capped
+// at params.pressureMaxIter). defaults: the DEFAULT_PARAMS values step() uses.
+// ms: measured cost of the projection stage per step, { 96: …, 128: … } in
+// milliseconds, in the 'stir' preset while a pointer drags through it
+// (warm-started, CFL ≈ 5), node 20 on a desktop; a mid-range phone is 3–5×
+// slower. relDiv: the largest max|D u| / max|D u*| seen in that run.
 export const PRESSURE_SOLVERS = {
   jacobi: {
     id: 'jacobi',
@@ -203,6 +233,8 @@ export const PRESSURE_SOLVERS = {
     description: 'A fixed number of weighted Jacobi sweeps, warm-started from the last pressure. Cheap and parallel, but far from converged: divergence is left behind and the flow looks compressible at large scales.',
     fixed: true,
     defaults: { iterations: 30, omega: 0.8 },
+    ms: { 96: 1.9, 128: 3.5 },
+    relDiv: 1.1,
     tex: 'p_c \\leftarrow p_c + \\omega\\,\\frac{b_c - (A p)_c}{a_{cc}}',
   },
   'red-black': {
@@ -212,6 +244,8 @@ export const PRESSURE_SOLVERS = {
     description: 'A fixed number of red–black Gauss–Seidel sweeps: about twice as effective per sweep as Jacobi.',
     fixed: true,
     defaults: { iterations: 30 },
+    ms: { 96: 2.5, 128: 4.4 },
+    relDiv: 1.1,
   },
   'pcg-mic0': {
     id: 'pcg-mic0',
@@ -219,23 +253,29 @@ export const PRESSURE_SOLVERS = {
     name: 'MIC(0)-preconditioned CG',
     description: 'Conjugate gradients with a modified incomplete Cholesky preconditioner (Bridson 2015 §5.4) to a relative tolerance.',
     fixed: false,
-    defaults: { tol: 1e-4, maxIter: 200 },
+    defaults: { tol: 1e-4, maxIter: 50 },
+    ms: { 96: 3.3, 128: 7.7 },
+    relDiv: 2.3e-2,
   },
   multigrid: {
     id: 'multigrid',
     method: 'multigrid',
     name: 'Multigrid V-cycles',
-    description: 'V(2,2) cycles to a relative tolerance; with a warm start one cycle per frame usually suffices.',
+    description: 'V(2,2) cycles to a relative tolerance; warm-started from the last pressure, one or two cycles per frame suffice. The default, and the fastest here.',
     fixed: false,
-    defaults: { tol: 1e-4, maxIter: 20 },
+    defaults: { tol: 1e-4, maxIter: 50 },
+    ms: { 96: 1.2, 128: 2.1 },
+    relDiv: 4e-3,
   },
   mgpcg: {
     id: 'mgpcg',
     method: 'mgpcg',
     name: 'Multigrid-preconditioned CG',
-    description: 'CG with one V-cycle as preconditioner: robust around obstacles; the reference solver for tests.',
+    description: 'CG with one V-cycle as preconditioner: robust around obstacles; the reference solver for tests (with a tight tolerance).',
     fixed: false,
-    defaults: { tol: 1e-6, maxIter: 50 },
+    defaults: { tol: 1e-4, maxIter: 50 },
+    ms: { 96: 1.5, 128: 2.6 },
+    relDiv: 1.1e-2,
   },
 };
 
@@ -515,75 +555,87 @@ function bilerpWrapMM(f, stride, ni, nj, fa, fb, wrapA, wrapB, lo, hi, k) {
   return l + tb * (u - l);
 }
 
-// ni1 = ni − 1, nj1 = nj − 1 (both ≥ 1).
+// ni1 = ni − 1, nj1 = nj − 1 (both ≥ 1). A clamped axis reads its edge
+// sample twice with weight 0 on the copy (da or db = 0), so a point on or
+// beyond the edge returns that sample exactly (f + 0·(f − f) = f; the form
+// f00 + 1·(f10 − f00) would be off by an ulp).
 function bilerpClamp(f, stride, ni1, nj1, fa, fb) {
   let a0;
   let ta;
+  let da = 1;
   if (fa <= 0) {
     a0 = 0;
     ta = 0;
   } else if (fa >= ni1) {
-    a0 = ni1 - 1;
-    ta = 1;
+    a0 = ni1;
+    ta = 0;
+    da = 0;
   } else {
     a0 = fa | 0;
     ta = fa - a0;
   }
   let b0;
   let tb;
+  let db = stride;
   if (fb <= 0) {
     b0 = 0;
     tb = 0;
   } else if (fb >= nj1) {
-    b0 = nj1 - 1;
-    tb = 1;
+    b0 = nj1;
+    tb = 0;
+    db = 0;
   } else {
     b0 = fb | 0;
     tb = fb - b0;
   }
   const k = a0 + b0 * stride;
   const f00 = f[k];
-  const f10 = f[k + 1];
-  const f01 = f[k + stride];
-  const f11 = f[k + stride + 1];
+  const f10 = f[k + da];
+  const f01 = f[k + db];
+  const f11 = f[k + db + da];
   const l = f00 + ta * (f10 - f00);
   const u = f01 + ta * (f11 - f01);
   return l + tb * (u - l);
 }
 
-// As bilerpClamp. The range is that of the four corners read (at a clamped
-// edge that includes one zero-weight neighbour: a slightly wider range, still
-// inside the field's own min and max, so no new extrema are possible).
+// As bilerpClamp. The range is that of the four corners read (at the low
+// edge, fa ≤ 0, that includes one zero-weight neighbour: a slightly wider
+// range, still inside the field's own min and max, so no new extrema are
+// possible).
 function bilerpClampMM(f, stride, ni1, nj1, fa, fb, lo, hi, m) {
   let a0;
   let ta;
+  let da = 1;
   if (fa <= 0) {
     a0 = 0;
     ta = 0;
   } else if (fa >= ni1) {
-    a0 = ni1 - 1;
-    ta = 1;
+    a0 = ni1;
+    ta = 0;
+    da = 0;
   } else {
     a0 = fa | 0;
     ta = fa - a0;
   }
   let b0;
   let tb;
+  let db = stride;
   if (fb <= 0) {
     b0 = 0;
     tb = 0;
   } else if (fb >= nj1) {
-    b0 = nj1 - 1;
-    tb = 1;
+    b0 = nj1;
+    tb = 0;
+    db = 0;
   } else {
     b0 = fb | 0;
     tb = fb - b0;
   }
   const k = a0 + b0 * stride;
   const f00 = f[k];
-  const f10 = f[k + 1];
-  const f01 = f[k + stride];
-  const f11 = f[k + stride + 1];
+  const f10 = f[k + da];
+  const f01 = f[k + db];
+  const f11 = f[k + db + da];
   const m0 = f00 < f10 ? f00 : f10;
   const m1 = f01 < f11 ? f01 : f11;
   const x0 = f00 > f10 ? f00 : f10;
@@ -729,7 +781,7 @@ function advectField(F, L, q, scheme, limiter, fixedZero) {
   }
   // BFECC: q̃ = q + ½(q − q̄) into s2, then q^{n+1} = A(q̃) into q, keeping
   // the semi-Lagrangian value q̂ (s1) for the 'revert' limiter.
-  for (let k = 0; k < n; k++) s2[k] = mask[k] === sv ? q[k] : 1.5 * q[k] - 0.5 * s2[k];
+  for (let k = 0; k < n; k++) s2[k] = mask[k] === sv ? q[k] : q[k] + 0.5 * (q[k] - s2[k]);
   const { cols, ni, nj, ox, oy } = L;
   const wx = F.g.periodicX;
   const wy = F.g.periodicY;
@@ -906,7 +958,8 @@ function footprint(F, x, y, R, du, dv, dye, heat, set) {
 // of a Gaussian of radius `radius` (an impulse: the next step's projection
 // removes its divergent part), and dye (amount at the centre; a number for
 // channel 0 or an array per channel) and optional heat. Applied immediately.
-// Returns the total dye added (∫ dye dA).
+// Returns the total dye added (∫ dye dA ≈ amount·π·radius²). The footprint
+// is cut at the domain edges; it does not wrap across a periodic side.
 export function splat(F, x, y, fx, fy, radius, dye = 0, heat = 0) {
   const added = footprint(F, x, y, radius, fx, fy, dye, heat, false);
   F.dyeInjected += added;
@@ -1052,10 +1105,21 @@ function facesFromCentres(F, dt, fx, fy) {
   }
 }
 
-// The force stage: sources, buoyancy, vorticity confinement, dye and heat
-// decay. Forces are applied with forward Euler (u += Δt f).
+// The force stage: vorticity confinement, sources, buoyancy, dye and heat
+// decay. Forces are applied with forward Euler (u += Δt f), each evaluated
+// from the state left by advection.
 export function forcesPhase(F, dt, params = DEFAULT_PARAMS) {
   let touched = false;
+  // Confinement first, so it sees the advected velocity and not one that
+  // already holds this step's (unprojected) buoyancy or source impulses:
+  // those are not divergence-free and their curl next to walls and solids
+  // would be "confined" into a real swirl (a fluid in hydrostatic balance
+  // would start to move).
+  const eps = P(params, 'vorticity');
+  if (eps !== 0) {
+    applyConfinement(F, dt, eps);
+    touched = true;
+  }
   if (P(params, 'sources') && F.sources.length) {
     applySources(F, dt);
     touched = true;
@@ -1064,11 +1128,6 @@ export function forcesPhase(F, dt, params = DEFAULT_PARAMS) {
   const beta = P(params, 'buoyancyBeta');
   if (alpha !== 0 || beta !== 0) {
     applyBuoyancy(F, dt, alpha, beta);
-    touched = true;
-  }
-  const eps = P(params, 'vorticity');
-  if (eps !== 0) {
-    applyConfinement(F, dt, eps);
     touched = true;
   }
   const kd = P(params, 'dyeDecay');
@@ -1533,28 +1592,35 @@ export function clearSolids(F) {
 // createPreset(id, opts) returns a fresh fluid with the preset's fields,
 // obstacles and sources, plus fluid.params (the recommended step params,
 // a plain object a figure may edit) and fluid.meta ({ preset, dt, … }:
-// dt is the suggested time step). opts override PRESETS[id].defaults.
+// dt is the suggested time step). opts override PRESETS[id].defaults; nx
+// alone keeps the preset's aspect ratio.
+//
+// Default sizes are chosen for a phone: each animated preset costs about
+// 1.2–1.7 ms per step in node on a desktop (roughly 4–8 ms on a mid-range
+// phone, about its frame budget; 'hero' is the heaviest). For a desktop,
+// pass { nx: 128 } (stir 128²: ≈ 5.5 ms per step; see the PERFORMANCE notes
+// in the header).
 
 export const PRESETS = {
   stir: {
     id: 'stir',
     name: 'Stir the box',
     description: 'A closed box of still fluid with bands of two dyes. Drag to stir: watch the bands fold, then blur.',
-    defaults: { nx: 96, ny: 96, dt: 1 / 60 },
+    defaults: { nx: 64, ny: 64, dt: 1 / 60 },
     params: { advection: 'maccormack', backtrace: 'rk2', pressure: 'multigrid', vorticity: 0 },
   },
   smoke: {
     id: 'smoke',
     name: 'Buoyant smoke plume',
     description: 'Hot smoke released at the bottom of a tall box with an open top: buoyancy lifts it, confinement keeps its curls.',
-    defaults: { nx: 64, ny: 96, dt: 1 / 60, seed: 7 },
+    defaults: { nx: 48, ny: 72, dt: 1 / 60, seed: 7 },
     params: { advection: 'maccormack', backtrace: 'rk2', pressure: 'multigrid', vorticity: 0.25, buoyancyAlpha: 0.1, buoyancyBeta: 4, heatDecay: 0.3 },
   },
   obstacle: {
     id: 'obstacle',
     name: 'Flow past a cylinder',
     description: 'Uniform inflow from the left, an open outlet on the right, a cylinder in the stream; dye streaks show the wake.',
-    defaults: { nx: 128, ny: 64, dt: 1 / 60, speed: 1, radius: 0.07 },
+    defaults: { nx: 96, ny: 48, dt: 1 / 60, speed: 1, radius: 0.07 },
     params: { advection: 'maccormack', backtrace: 'rk2', pressure: 'mgpcg', pressureTol: 1e-4, vorticity: 0.3 },
   },
   vortex: {
@@ -1575,7 +1641,7 @@ export const PRESETS = {
     id: 'hero',
     name: 'Three-colour swirl',
     description: 'Three emitters circle the box, each pushing its own colour of dye towards the middle, where the jets collide and roll up. Dye fades slowly, so the picture keeps renewing itself.',
-    defaults: { nx: 96, ny: 96, dt: 1 / 60 },
+    defaults: { nx: 64, ny: 64, dt: 1 / 60 },
     params: { advection: 'maccormack', backtrace: 'rk2', pressure: 'multigrid', vorticity: 0.35, dyeDecay: 0.25 },
   },
 };
@@ -1602,6 +1668,9 @@ export function createPreset(id, opts = {}) {
   const Pr = PRESETS[id];
   if (!Pr) throw new Error(`stablefluids: unknown preset '${id}'`);
   const o = { ...Pr.defaults, ...opts };
+  // nx alone keeps the preset's aspect ratio (so { nx: 128 } on a square
+  // preset is 128², not 128 × 64).
+  if (opts.nx !== undefined && opts.ny === undefined) o.ny = Math.max(2, Math.round((opts.nx * Pr.defaults.ny) / Pr.defaults.nx));
   const params = { ...Pr.params, ...(opts.params || {}) };
   let F;
   const meta = { preset: id, dt: o.dt };

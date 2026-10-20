@@ -96,7 +96,7 @@ export function mountTimeline(fig) {
       ctx.textAlign = 'center';
       if (W > 360 || y % 100 === 0) ctx.fillText(String(y), x, H - 6);
     }
-    // Lanes.
+    // Lane rules (the labels go on top of the dots, below).
     ctx.textAlign = 'left';
     for (let l = 0; l < LANES.length; l++) {
       ctx.strokeStyle = pal.css('line');
@@ -104,8 +104,6 @@ export function mountTimeline(fig) {
       ctx.moveTo(0, tm[l] + 0.5);
       ctx.lineTo(W, tm[l] + 0.5);
       ctx.stroke();
-      ctx.fillStyle = pal.css(`s${l + 1}`);
-      ctx.fillText(GROUPS[LANES[l]], 6, tm[l] + 11);
     }
     // Dots: filled for a confident date, hollow when the origin is uncertain.
     for (let k = 0; k < N; k++) {
@@ -129,6 +127,14 @@ export function mountTimeline(fig) {
         ctx.fillText('‹', px[k] - R - 6, py[k] + 4);
       }
     }
+    // Lane labels on a backing so dots never hide them.
+    for (let l = 0; l < LANES.length; l++) {
+      const label = GROUPS[LANES[l]];
+      ctx.fillStyle = pal.css('surface', 0.85);
+      ctx.fillRect(3, tm[l] + 1.5, ctx.measureText(label).width + 6, 12);
+      ctx.fillStyle = pal.css(`s${l + 1}`);
+      ctx.fillText(label, 6, tm[l] + 11);
+    }
     if (state.sel >= 0) {
       const x = px[state.sel];
       const y = py[state.sel];
@@ -151,7 +157,7 @@ export function mountTimeline(fig) {
     const n = it.n;
     const sym = safeTex(n.tex || '');
     card.replaceChildren(
-      h('div.nt-tl-sym', { html: sym || n.symbol }),
+      h((n.symbol || '').length > 6 ? 'div.nt-tl-sym.nt-tl-word' : 'div.nt-tl-sym', { html: sym || n.symbol }),
       h(
         'div.nt-tl-text',
         h('strong', n.name),
@@ -232,4 +238,5 @@ export function mountTimeline(fig) {
   const start = preset ? dated.findIndex((it) => it.n.id === preset) : -1;
   if (start >= 0) state.sel = start;
   refilter();
+  return () => box.destroy();
 }

@@ -13,8 +13,9 @@ import { SCHEMES, maxAmplification } from '../../sims/advection.js';
 import { reach, cflLimit } from '../../sims/ch-advection-analysis.js';
 import { LINEAR_OPTIONS, fmtNu, fmtG } from './common.js';
 
-const NU_MIN = 0.1, NU_MAX = 2.5;
-const NS = 241; // ν samples for the stability bar
+const NU_MIN = 0.1, NU_MAX = 2.5; // slider range
+const NU_BAR = 0.01; // the stability bar is sampled from here (ν = 0 itself is trivially stable)
+const NS = 250; // ν samples for the stability bar
 const XMIN = -3.3, XMAX = 1.9; // window in units of aT
 
 export function mountCone(fig, { signal }) {
@@ -32,13 +33,13 @@ export function mountCone(fig, { signal }) {
   const rCone = readout(f.readouts, { label: 'cone at t = 0', title: 'Numerical domain of dependence, in units of aT' });
   const rFoot = readout(f.readouts, { label: 'foot inside?' });
   const rG = readout(f.readouts, { label: 'max |G|', title: 'Largest von Neumann amplification factor at this ν' });
-  const rStable = readout(f.readouts, { label: 'stable for', title: 'Sampled from max|G| ≤ 1 on 0.1 ≤ ν ≤ 2.5' });
+  const rStable = readout(f.readouts, { label: 'stable for', title: 'Sampled from max|G| ≤ 1 on 0.01 ≤ ν ≤ 2.5' });
 
   function sampleStable() {
     if (stableFor === cfg.scheme) return;
     stableFor = cfg.scheme;
     for (let k = 0; k < NS; k++) {
-      const nu = NU_MIN + ((NU_MAX - NU_MIN) * k) / (NS - 1);
+      const nu = NU_BAR + ((NU_MAX - NU_BAR) * k) / (NS - 1);
       stable[k] = maxAmplification(cfg.scheme, nu, 181) <= 1 + 1e-9 ? 1 : 0;
     }
   }
@@ -100,7 +101,7 @@ export function mountCone(fig, { signal }) {
     ctx.fillText('0', padL - 8, PY(0));
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    for (let x = -3; x <= 1; x++) ctx.fillText(x === 0 ? '0' : `${x < 0 ? '−' : ''}${Math.abs(x)}aT`, PX(x), PY(0) + 5);
+    for (let x = -3; x <= 1; x++) ctx.fillText(x === 0 ? '0' : `${x < 0 ? '−' : ''}${Math.abs(x) === 1 ? '' : Math.abs(x)}aT`, PX(x), PY(0) + 5);
     // the true characteristic and its foot
     ctx.strokeStyle = pal.css('accent');
     ctx.lineWidth = 2.5;
@@ -143,8 +144,8 @@ export function mountCone(fig, { signal }) {
     ctx.fillStyle = pal.css('s2', 0.85);
     for (let k = 0; k < NS; k++) {
       if (!stable[k]) continue;
-      const v = NU_MIN + ((NU_MAX - NU_MIN) * k) / (NS - 1);
-      const w = (bx1 - bx0) * ((NU_MAX - NU_MIN) / (NS - 1) / NU_MAX);
+      const v = NU_BAR + ((NU_MAX - NU_BAR) * k) / (NS - 1);
+      const w = (bx1 - bx0) * ((NU_MAX - NU_BAR) / (NS - 1) / NU_MAX);
       ctx.fillRect(BX(v) - w / 2, y2, w + 0.5, 14);
     }
     // ticks and the current ν
@@ -183,8 +184,8 @@ export function mountCone(fig, { signal }) {
         hi = k;
       }
     }
-    if (lo < 0) return 'no ν in [0.1, 2.5]';
-    const v = (k) => NU_MIN + ((NU_MAX - NU_MIN) * k) / (NS - 1);
+    if (lo < 0) return 'no ν in (0, 2.5]';
+    const v = (k) => NU_BAR + ((NU_MAX - NU_BAR) * k) / (NS - 1);
     const open = SCHEMES[cfg.scheme].nuMaxOpen && Math.abs(v(hi) - SCHEMES[cfg.scheme].nuMax) < 1e-9;
     return `ν ${open ? '<' : '≤'} ${v(hi).toFixed(2)}`;
   }

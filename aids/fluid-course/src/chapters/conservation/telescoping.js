@@ -248,7 +248,7 @@ export function mountConservationTelescoping(fig, ctx) {
     }
     if (B.steps === 0) ui.status.textContent = 'Same road, same start, same cells. Press Drive or Step.';
     else if (speed === 'uniform') ui.status.textContent = 'Constant speed: the two updates are the same arithmetic, and both keep every car.';
-    else if (other === 'advective') ui.status.textContent = `The advective form moves values, not amounts: the total swings by up to ${fmt(peakB() * 100, 2)}% and comes back. It is a different law.`;
+    else if (other === 'advective') ui.status.textContent = `The advective form moves values, not amounts: so far its total has swung by up to ${fmt(peakB() * 100, 2)}% as the cars pass the slow zone. It is a different law.`;
     else ui.status.textContent = `After ${pass.toFixed(2)} passes the product rule has ${dB > 0 ? 'made' : 'lost'} ${fmt(Math.abs(dB) * 100, 3)}% of the cars; the flux form is out by ${sci(Math.max(Math.abs(dA), 1e-17), 1)} (round-off).`;
 
     if (withPlot) {

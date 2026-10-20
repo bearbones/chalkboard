@@ -73,6 +73,7 @@ export function mountConservationBudget(fig, ctx) {
     onInput: (v) => {
       nu = v;
       if ('nu' in flow.params) flow.params.nu = v;
+      ref = refScale();
       sample();
       draw();
     },
@@ -106,9 +107,36 @@ export function mountConservationBudget(fig, ctx) {
   const rBig = readout(ui.readouts, { label: 'Largest term (either component)' });
   const rRes = readout(ui.readouts, { label: 'Residual / largest term' });
 
+  // Typical size of the terms for this flow (largest |term| on a coarse
+  // lattice at t = 0), so that "every term is zero here" can be recognised.
+  let ref = 1;
+  function refScale() {
+    const d = flow.domain;
+    let m = 0;
+    for (let j = 1; j < 8; j++) {
+      for (let i = 1; i < 8; i++) {
+        const x = d.xmin + ((d.xmax - d.xmin) * i) / 8;
+        const y = d.ymin + ((d.ymax - d.ymin) * j) / 8;
+        if (!clear(x, y)) continue;
+        momentumBudget(id, flow, x, y, 0, nu, out);
+        m = Math.max(m, out.scale);
+      }
+    }
+    return m > 0 ? m : 1;
+  }
+  // The probe's finite-difference stencil must stay in the fluid: keep it a
+  // little way off a solid body.
+  function clear(x, y) {
+    if (!flow.solid) return true;
+    const p = flow.params;
+    if (id === 'cylinder') return Math.hypot(x - p.x0, y - p.y0) > 1.01 * p.R;
+    return !flow.solid(x, y);
+  }
+
   function setFlow(v) {
     id = v;
     flow = makeBudgetFlow(id, nu);
+    ref = refScale();
     t = 0;
     probe[0] = PROBE[id][0];
     probe[1] = PROBE[id][1];
@@ -210,11 +238,15 @@ export function mountConservationBudget(fig, ctx) {
     rPos.set(`(${fmt(probe[0], 3)}, ${fmt(probe[1], 3)}), t = ${fmt(t, 3)}`);
     rU.set(speed);
     rBig.set(out.scale);
+    // At a stagnation point or a vortex centre every term vanishes and a
+    // relative residual is meaningless; measure against the flow's own scale.
+    const still = out.scale < 1e-6 * ref;
     const res = Math.hypot(out.residual[0], out.residual[1]) / Math.max(out.scale, 1e-300);
-    const balanced = res < 1e-5;
-    rRes.set(sci(Math.max(res, 1e-17), 1), balanced ? 'good' : 'bad');
+    const balanced = still || res < 1e-5;
+    rRes.set(still ? 'every term ≈ 0 here' : sci(Math.max(res, 1e-17), 1), balanced ? 'good' : 'bad');
     const visc = Math.hypot(out.viscous[0], out.viscous[1]) / Math.max(out.scale, 1e-300);
-    if (viscous) ui.status.textContent = balanced ? `Balanced to ${sci(Math.max(res, 1e-17), 1)} of the largest term: this field solves the Navier–Stokes equations here.` : 'Out of balance.';
+    if (still) ui.status.textContent = 'Every term is zero here (a stagnation point or the centre of a vortex): nothing to balance. Move the probe.';
+    else if (viscous) ui.status.textContent = balanced ? `Balanced to ${sci(Math.max(res, 1e-17), 1)} of the largest term: this field solves the Navier–Stokes equations here.` : 'Out of balance.';
     else if (balanced) ui.status.textContent = 'Balanced without the viscous term: here ν∇²u = 0, so this flow also solves Euler’s equations.';
     else ui.status.textContent = `Without the viscous term the books do not balance: the missing ν∇²u is ${fmt(100 * visc, 2)}% of the largest term. This flow needs viscosity.`;
   }
@@ -289,7 +321,7 @@ export function mountConservationBudget(fig, ctx) {
     const ex = 0.02 * (dd.xmax - dd.xmin);
     P[0] = Math.min(dd.xmax - ex, Math.max(dd.xmin + ex, P[0]));
     P[1] = Math.min(dd.ymax - ex, Math.max(dd.ymin + ex, P[1]));
-    if (flow.solid && flow.solid(P[0], P[1])) return;
+    if (!clear(P[0], P[1])) return;
     probe[0] = P[0];
     probe[1] = P[1];
     draw();
@@ -309,7 +341,7 @@ export function mountConservationBudget(fig, ctx) {
     e.preventDefault();
     const x = probe[0] + mv[0];
     const y = probe[1] + mv[1];
-    if (flow.solid && flow.solid(x, y)) return;
+    if (!clear(x, y)) return;
     probe[0] = x;
     probe[1] = y;
     draw();

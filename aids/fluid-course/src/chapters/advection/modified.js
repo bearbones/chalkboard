@@ -103,8 +103,8 @@ export function mountModified(fig, { signal }) {
     } else {
       label(r2, 'θ = kΔx', 'Wavenumber of the carrier wave in radians per cell');
       label(r3, 'phase speed c/a', 'Discrete, from the amplification factor');
-      label(r4, 'group speed c_g/a', 'Discrete: (1/ν) d(phase per step)/dθ');
-      label(r5, 'c_g/a, modified eq.', 'Leading order: 1 + 3Eθ²/(aΔx²)');
+      label(r4, 'group speed / a', 'Discrete: (1/ν) d(phase per step)/dθ');
+      label(r5, 'group speed / a, modified eq.', 'Leading order: 1 + 3Eθ²/(aΔx²)');
       label(r6, 'envelope lag: measured / predicted', 'Distance behind the exact packet');
       solPlot.setAxes({ y: { min: -1.15, max: 1.15 } });
       hPlot.setAxes({ y: { label: 'envelope lag', min: null, max: null } });
@@ -122,20 +122,23 @@ export function mountModified(fig, { signal }) {
         { x: px, y: pred, color: 's2', dash: [2, 3], width: 2.5, label: 'heat equation with D' },
         { x: st.x, y: st.u, color: 's1', width: 2, points: cfg.n <= 100 ? 2 : 0, label: name },
       ]);
+      // y axis: at least up to the prediction at the end of the trip.
       hPlot.draw([
         { x: hT, y: hQ, color: 's2', dash: [6, 4], width: 2, label: 'predicted 2Dt' },
         { x: hT, y: hM, color: 's1', width: 2, label: 'measured' },
-      ]);
+      ], { yExtent: [0, Math.max(2 * D, 1e-6)] });
     } else {
       solPlot.draw([
         { x: st.x, y: st.exact, color: 'ink', dash: [4, 4], width: 1, label: 'exact', alpha: 0.6 },
         { x: st.x, y: st.u, color: 's1', width: 1.8, label: name },
       ], { extra: markers });
+      // y axis: at least the two predicted lags at the end of the trip.
+      const l1 = cg - 1, l2 = cgMe - 1;
       hPlot.draw([
         { x: hT, y: hP, color: 's2', dash: [6, 4], width: 2, label: 'discrete group velocity' },
         { x: hT, y: hQ, color: 's3', dash: [2, 3], width: 2, label: 'modified equation' },
         { x: hT, y: hM, color: 's1', width: 2, label: 'measured' },
-      ]);
+      ], { yExtent: [Math.min(0, l1, l2, -0.02), Math.max(0, l1, l2, 0.02)] });
     }
   }
 
@@ -249,7 +252,7 @@ export function mountModified(fig, { signal }) {
       const name = SCHEMES[cfg.pScheme].name;
       const dir = cg < 1 ? 'lags behind' : 'runs ahead of';
       const s = st.t === 0
-        ? `Press Run. Each wave crest moves at c = ${fmt(cPh, 3)}a, but the packet as a whole should move at c_g = ${fmt(cg, 3)}a.`
+        ? `Press Run. Each wave crest moves at c = ${fmt(cPh, 3)}a, but the packet as a whole should move at the group speed, ${fmt(cg, 3)}a.`
         : `${name}: the packet ${dir} the exact one by ${fmt(Math.abs(lagM), 3)}; the discrete group velocity predicts ${fmt(Math.abs(lagP), 3)}. Peak |u| = ${fmt(Math.max(Dg.max, -Dg.min), 3)}.`;
       if (f.status.textContent !== s) f.status.textContent = s;
     }

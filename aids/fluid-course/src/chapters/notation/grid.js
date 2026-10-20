@@ -5,7 +5,7 @@
 // flux formulas, stencils and orders come from the shared advection kernel
 // (SCHEMES), and the measured error ratio from its convergenceStudy.
 
-import { h } from '../../kit/dom.js';
+import { h, sci } from '../../kit/dom.js';
 import { frame, select, toggle, readout, canvasBox, sliced } from '../../kit/widgets.js';
 import { palette } from '../../kit/palette.js';
 import { tex } from '../../kit/math.js';
@@ -194,7 +194,7 @@ export function mountGrid(fig, { signal }) {
     const blown = !Number.isFinite(last) || e[e.length - 1] > 1;
     if (blown) {
       rMeas.set('blows up', 'bad');
-      f.status.textContent = `${s.name} is consistent but unstable: its error halves on the coarse grids, then round-off grows until the 256-cell answer is useless.`;
+      f.status.textContent = `${s.name} is consistent but unstable: its error falls from 32 to 64 cells, then rounding errors in the shortest waves grow until the finer answers are useless (error ${sci(e[e.length - 1])} on 256 cells).`;
     } else {
       rMeas.set(last.toFixed(2), Math.abs(last - 2 ** s.order) < 0.15 * 2 ** s.order ? 'good' : '');
       f.status.textContent = `${s.name}: order ${s.order}, so halving Δx (and Δt with it) should divide the error by ${2 ** s.order}. Measured on a sine wave: ${e
@@ -260,4 +260,5 @@ export function mountGrid(fig, { signal }) {
   f.controls.querySelector('select').value = state.id;
   layout();
   show();
+  return () => box.destroy();
 }

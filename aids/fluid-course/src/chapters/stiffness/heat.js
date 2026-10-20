@@ -185,14 +185,14 @@ export function mountHeat(fig, { signal }) {
     rdDt.set(num(dt));
     rdN.set(String(Math.ceil(0.1 / dt - 1e-9)));
     rdG.set(num(w, 4), w > 1 + 1e-12 ? 'bad' : 'good');
-    rdGpi.set(num(gShort), gShort < -0.5 ? 'bad' : '');
+    rdGpi.set(num(gShort), gShort < -0.8 ? 'bad' : '');
     rdE.set(num(err), err > 0.05 ? 'bad' : '');
     rdTV.set(`${num(tv)} (${num(tv0)})`, tv > tv0 + 1e-9 ? 'bad' : '');
     let msg;
     if (blown) msg = `Blowing up: the shortest wave grows by |G| = ${num(w, 4)} per step, so the error passed 3 after ${s.steps} steps. Paused.`;
     else if (w > 1 + 1e-12) msg = `r = ${num(rS.value)} is past this scheme's limit r ≤ ${num(limit)}: the shortest wave will grow by ${num(w, 4)} per step. Press Play.`;
     else if (tv > tv0 + 1e-9) msg = `Stable, but the total variation has risen above its starting value: new wiggles. The shortest wave has G = ${num(gShort)}: it flips sign every step and barely decays.`;
-    else if (gShort < -0.5) msg = `Stable, but G = ${num(gShort)} for the shortest wave: it flips sign every step and decays slowly.`;
+    else if (gShort < -0.8) msg = `Stable, but G = ${num(gShort)} for the shortest wave: it flips sign every step and decays slowly.`;
     else if (s.t >= T_END) msg = `Reached t = ${T_END}: the profile has nearly settled.`;
     else msg = `Stable: every grid mode decays (worst |G| = ${num(w, 4)}).`;
     if (msg !== lastStatus) f.status.textContent = lastStatus = msg;

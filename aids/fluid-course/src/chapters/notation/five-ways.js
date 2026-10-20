@@ -9,7 +9,7 @@ import { h } from '../../kit/dom.js';
 import { frame, slider, button, toggle, readout } from '../../kit/widgets.js';
 import { tex } from '../../kit/math.js';
 
-const STAGES = [
+export const STAGES = [
   {
     id: 'euler',
     who: 'Euler: presented 1755, printed 1757',

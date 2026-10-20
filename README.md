@@ -142,6 +142,7 @@ smoothed over.
 | `lbm.js` | D2Q9 lattice Boltzmann: BGK and TRT, bounce-back, inlets and outlets, Guo forcing; cylinder, cavity, Poiseuille, Taylor–Green and the vortex-street hero; a health check |
 | `sph.js` | Weakly compressible SPH: cubic and Wendland kernels, cell-list neighbours, Tait EOS, artificial viscosity, wall particles, tensile-instability fixes |
 | `fft.js`, `spectral.js`, `turbulence.js` | FFTs; spectral differentiation and pseudo-spectral Burgers with the 2/3 rule; 2-D turbulence; the Sabra shell model; Kolmogorov scales, DNS cost and Pope's model spectrum |
+| `ch-<chapter>*.js` | Small kernels that belong to one chapter (lattice gases, Cholesky fill, a thread-count summation demo, benchmark checks…), each tested in `tests/fluid-course/ch-<chapter>.test.js` |
 
 Each kernel's header cites the published scheme it implements. Each kernel's
 test file measures the claims the chapters make: orders of accuracy, stability
@@ -156,7 +157,8 @@ thresholds, conservation, damping factors and exact solutions.
   staircased masks, except in the potential-flow and Lagrangian
   demonstrations, which use analytic geometry.
 - **Lattice Boltzmann and SPH:** both run weakly compressible at
-  phone-friendly sizes (about 200×80 lattice nodes, about 1,500 particles).
+  phone-friendly sizes (about 200×80 lattice nodes, about 1,500 particles;
+  the stirrable Stable Fluids box runs at about 64×64).
   Their errors are part of the lesson, not hidden.
 - **Turbulence models:** RANS and LES models are explained with model
   spectra and cost estimates, not run as solvers.

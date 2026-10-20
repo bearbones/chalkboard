@@ -286,6 +286,7 @@ mtext.it { font-style: italic; }
 mtext.b { font-weight: 700; }
 mrow.boxed { border: 1.5px solid var(--write); padding: 2px 4px; border-radius: 4px; }
 mtable.aligned mtd, mtable.cases mtd { padding: 3px 0.15em; }
+mtable.matrix mtd { padding: 2px 0.4em; }
 mtable.cases mtd + mtd { padding-left: 1.2em; }
 /* Equation terms: \class{hl}{…} highlights; \class{t1}{…}…t5 colour a term to
    match the series of the same number in a nearby plot (name it in the text too). */
@@ -378,7 +379,8 @@ figure.widget {
 .fig-readouts {
   margin: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  /* Tracks come in label/value pairs so a dt never wraps away from its dd. */
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr) minmax(110px, 1.3fr));
   gap: 6px 14px;
   font-size: 0.86rem;
 }
@@ -391,7 +393,7 @@ figure.widget > figcaption { font-size: 0.9rem; color: var(--muted); max-width: 
 .fig-error { color: var(--bad); font-size: 0.92rem; }
 .canvas-wrap { position: relative; min-width: 0; }
 .canvas-wrap canvas { display: block; width: 100%; border-radius: 8px; background: var(--board); }
-.canvas-wrap.field canvas { touch-action: none; cursor: crosshair; }
+/* FieldView.onDrag sets touch-action and cursor itself, so figures you cannot drag still scroll on a phone. */
 .board-frame { padding: clamp(5px, 1.2vw, 10px); background: var(--frame); border-radius: 10px; box-shadow: inset 0 -3px 0 var(--frame-shadow), 0 1px 0 var(--frame-shadow); }
 .board-frame canvas { border-radius: 3px; }
 

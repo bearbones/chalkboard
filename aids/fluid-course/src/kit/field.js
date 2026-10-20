@@ -116,6 +116,7 @@ export class FieldView {
     const cv = this.box.canvas;
     let last = null;
     cv.style.touchAction = 'none';
+    cv.style.cursor = 'crosshair';
     cv.addEventListener('pointerdown', (e) => {
       cv.setPointerCapture(e.pointerId);
       last = this.toGrid(e);

@@ -5,7 +5,7 @@
 // against θ. All values from advection.js amplification() and
 // maxAmplification(); the unit circle and the exact arc are closed form.
 
-import { fmt } from '../../kit/dom.js';
+import { h, fmt } from '../../kit/dom.js';
 import { frame, slider, select, readout } from '../../kit/widgets.js';
 import { Plot } from '../../kit/plot.js';
 import { SCHEMES, amplification, maxAmplification } from '../../sims/advection.js';
@@ -16,8 +16,12 @@ const M = 181; // θ samples on [0, π]
 export function mountAmplification(fig, { signal }) {
   const f = frame(fig, { title: 'The amplification factor G(θ)', wide: true });
   f.stage.classList.add('cols');
-  const plane = new Plot(f.stage, { x: { label: 'Re G', min: -1.7, max: 1.7 }, y: { label: 'Im G', min: -1.7, max: 1.7 }, equal: true, aspect: 1.1, minHeight: 240, hover: false, label: 'The complex plane: the unit circle, the exact factor and the scheme’s G as θ runs from 0 to π' });
-  const curves = new Plot(f.stage, { x: { label: 'θ = kΔx (in units of π)', min: 0, max: 1 }, y: { label: '|G| and c/a', min: 0, max: 1.5 }, aspect: 1.1, minHeight: 240, label: '|G| and relative phase speed against θ' });
+  // One column per plot, each with its own legend, so the legends do not
+  // become grid items of their own.
+  const colL = h('div'), colR = h('div');
+  f.stage.append(colL, colR);
+  const plane = new Plot(colL, { x: { label: 'Re G', min: -1.7, max: 1.7 }, y: { label: 'Im G', min: -1.7, max: 1.7 }, equal: true, aspect: 1.1, minHeight: 240, hover: false, label: 'The complex plane: the unit circle, the exact factor and the scheme’s G as θ runs from 0 to π' });
+  const curves = new Plot(colR, { x: { label: 'θ = kΔx (in units of π)', min: 0, max: 1 }, y: { label: '|G| and c/a', min: 0, max: 1.5 }, aspect: 1.1, minHeight: 240, label: '|G| and relative phase speed against θ' });
   const cfg = { scheme: 'upwind', nu: 0.5, theta: Math.PI / 2 };
 
   // Buffers, filled in place.

@@ -8,7 +8,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { totalVariation, observedOrders } from '../../aids/fluid-course/src/sims/util.js';
 import { createHeat, step as heatStep, dtForR, fillExact, HEAT_DEMOS, heatDemoDt, thomas, assembleHeat, amplification, createAdvDiff, solveAdvDiff } from '../../aids/fluid-course/src/sims/diffusion.js';
-import { stiffnessRatio, heatExplicitLimit, createProblem, createIntegrator, step as odeStep, fillExact as odeExact, maxStableStep, stabilityValue } from '../../aids/fluid-course/src/sims/stiff.js';
+import { stiffnessRatio, heatExplicitLimit, createProblem, createIntegrator, step as odeStep, fillExact as odeExact, maxStableStep, stabilityValue, stabilityAbs, heatEigenvalues } from '../../aids/fluid-course/src/sims/stiff.js';
 import { richardsonRoots, richardsonAmplification, richardsonStep, chapterHeatStep, heatRefinementStudy, dufortFrankelModulus, RICHARDSON } from '../../aids/fluid-course/src/sims/ch-stiffness-richardson.js';
 import { tex } from '../../aids/fluid-course/src/kit/math.js';
 
@@ -284,4 +284,45 @@ test('central differencing at P = 4: the nodes next to the outflow are exactly (
   const up = createAdvDiff(20);
   solveAdvDiff(up, { a: 40, kappa: 1, scheme: 'upwind' });
   close(err(up), 0.198, 1e-3, 'upwind at P = 2');
+});
+
+// ---------------------------------------------------------------- numbers in the "try" lists
+
+test('heat lab: r = 0.4 needs 625 then 2,500 steps to t = 0.1; at r = 0.52 the sawtooth shows by about step 50 and the error passes 3 near step 105', () => {
+  for (const [n, want] of [
+    [50, 625],
+    [100, 2500],
+  ]) {
+    const s = createHeat({ n, preset: 'noisy-sine' });
+    assert.equal(Math.ceil(0.1 / dtForR(s, 0.4) - 1e-9), want, `n = ${n}`);
+  }
+  const s = createHeat({ n: 50, preset: 'noisy-sine' });
+  const dt = dtForR(s, 0.52);
+  let visible = 0;
+  let past3 = 0;
+  for (let k = 1; k <= 200 && !past3; k++) {
+    heatStep(s, { scheme: 'ftcs', dt });
+    const e = maxErr(s);
+    if (!visible && e > 0.05) visible = k;
+    if (e > 3) past3 = k;
+  }
+  assert.ok(visible >= 45 && visible <= 60, `visible at step ${visible}`);
+  assert.ok(past3 >= 100 && past3 <= 110, `error past 3 at step ${past3}`);
+});
+
+test('regions figure: explicit Euler at h = 0.0019 keeps all 15 modes of n = 16 inside and loses 21 of 31 at n = 32', () => {
+  const outside = (n, h) => {
+    const lam = heatEigenvalues(n, 1);
+    let c = 0;
+    for (const l of lam) if (stabilityAbs('euler', h * l, 0) > 1 + 1e-12) c++;
+    return c;
+  };
+  assert.equal(outside(16, 0.0019), 0);
+  assert.equal(outside(32, 0.0019), 21);
+  close(stabilityAbs('trapezoid', 0.01 * heatEigenvalues(64, 1)[62], 0), 0.976, 1e-3, 'trapezoid stiffest |R| at n = 64, h = 0.01');
+});
+
+test('Richardson with dt = dx/2 still finishes on 10 and 20 cells (too few steps to blow up)', () => {
+  const b = [...heatRefinementStudy({ scheme: 'richardson', path: 'dt/dx', c: 0.5, ns: [10, 20, 40] })];
+  assert.deepEqual(b.map((x) => x.blewUp), [false, false, true]);
 });

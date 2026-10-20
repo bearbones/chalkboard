@@ -1206,7 +1206,8 @@ function maxOf(a, n) {
 // Nearest fluid neighbour of every fluid particle, from the current pair
 // list (fills sph.nnDist; capped at the kernel support). paired is the
 // fraction of fluid particles whose nearest neighbour is closer than
-// threshold * dx.
+// threshold * dx. min and mean are absolute distances; diagnostics()
+// reports them in units of dx.
 export function nearestNeighbours(sph, threshold = 0.5) {
   const { nFluid, nnDist, support, pairs } = sph;
   for (let i = 0; i < nFluid; i++) nnDist[i] = support * support;

@@ -216,7 +216,7 @@ test('finite volumes: the exact solution conserves the total and the flux form c
       for (let k = 0; k < N; k++) m += out[k] / N;
       assert.ok(Math.abs(m / s.mass0 - 1) < 2e-4, `${speed} t=${t}: ${m} vs ${s.mass0}`);
     }
-    // Upwinding smears the profile (numerical diffusion, chapter 6), and the
+    // Upwinding smears the profile (numerical diffusion; see the advection chapter), and the
     // narrow bump is squeezed further in the slow parts, so the error falls
     // slowly at first; it falls steadily, and the observed order climbs
     // towards 1 as the grid resolves the bump.

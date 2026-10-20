@@ -45,7 +45,7 @@ function fmtPressure(p) {
 export function mountKnudsen(fig) {
   const start = SCENARIOS.find((s) => s.id === fig.dataset.preset) || SCENARIOS[0];
   const f = frame(fig, { title: 'Knudsen number calculator (air)' });
-  const box = canvasBox(f.stage, { aspect: 3.2, minHeight: 150, maxHeight: 210, label: 'Two log scales. Top: the Knudsen number with the continuum, slip, transition and free-molecular bands and a marker for the current case. Bottom: lengths from 0.1 nm to 100 m with markers for the mean free path and for the length scale L.' });
+  const box = canvasBox(f.stage, { aspect: 3.2, minHeight: 150, maxHeight: 170, label: 'Two log scales. Top: the Knudsen number with the continuum, slip, transition and free-molecular bands and a marker for the current case. Bottom: lengths from 0.1 nm to 100 m with markers for the mean free path and for the length scale L.' });
   let L = start.L;
   let p = start.p;
   let T = start.T;
@@ -92,7 +92,7 @@ export function mountKnudsen(fig) {
     ctx.font = '12px "Atkinson Hyperlegible", system-ui, sans-serif';
     // --- Knudsen strip
     const y0 = 22;
-    const hband = Math.max(30, H * 0.3);
+    const hband = Math.max(30, Math.min(80, H - 92));
     const cols = ['s1', 's2', 's3', 's4'];
     KNUDSEN_REGIMES.forEach((r, q) => {
       const a = kx(Math.max(KN_MIN, r.min || KN_MIN));
@@ -116,7 +116,7 @@ export function mountKnudsen(fig) {
       ctx.moveTo(px, y0);
       ctx.lineTo(px, y0 + 4);
       ctx.stroke();
-      if ((e + 8) % stride === 0) ctx.fillText(e === 0 ? '1' : `10${superscript(e)}`, px, y0 - 2);
+      if (e > -8 && (e + 8) % stride === 0) ctx.fillText(e === 0 ? '1' : `10${superscript(e)}`, px, y0 - 2);
     }
     ctx.textAlign = 'left';
     ctx.fillText('Kn', 2, 12);

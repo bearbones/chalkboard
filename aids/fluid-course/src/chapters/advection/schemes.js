@@ -16,7 +16,7 @@ import { SCHEMES, PRESETS, createState, reset, step, diagnostics, maxAmplificati
 import { EXTRA_PRESETS, cflLimit } from '../../sims/ch-advection-analysis.js';
 import { LINEAR_OPTIONS, PROFILE_OPTIONS, fmtNu, fmtG } from './common.js';
 
-const SCHEME_OPTIONS = [...LINEAR_OPTIONS, ['limited', 'MC-limited (chapter 8)']];
+const SCHEME_OPTIONS = [...LINEAR_OPTIONS, ['limited', 'MC-limited (see Shocks)']];
 const NS = [['50', '50'], ['100', '100'], ['200', '200'], ['400', '400']];
 const START_OPTIONS = [['lw', 'Lax–Wendroff step'], ['ftcs', 'FTCS step'], ['copy', 'copy: u¹ = u⁰']];
 const HCAP = 512; // history points kept (halved when full)
@@ -147,10 +147,11 @@ export function mountSchemes(fig, { signal }) {
       { x: st.x, y: st.exact, color: 'ink', dash: [5, 4], width: 1.5, label: 'exact' },
       { x: st.x, y: st.u, color: 's1', width: 2, points: cfg.n <= 100 ? 2 : 0, label: name },
     ]);
+    // x axis: at least the planned run (the preset's pause, else one trip round).
     histPlot.draw([
       { x: hS, y: hM, color: 's1', width: 2, label: 'measured max |u|' },
       Number.isFinite(gMax) ? { x: hS, y: hP, color: 's2', width: 1.5, dash: [6, 4], label: 'slope max |G| per step', hover: false } : null,
-    ]);
+    ], { xExtent: [0, stopAt || Math.ceil(cfg.n / cfg.nu)] });
   }
 
   // History: one point per `hStride` calls; halve the arrays when full.
