@@ -2,7 +2,7 @@
 // the panels, and decides which events are stops at a chosen granularity.
 
 import { RANK } from './solver.js';
-import { Stencil5, buildHierarchy, bicgstab, jacobiOnly, vcycleOnly, LinearFailure } from './linear.js';
+import { Stencil5, buildHierarchy, bicgstab, micpcg, jacobiOnly, vcycleOnly, LinearFailure } from './linear.js';
 
 // Whole-field ops (cell −1) are stops at the granularity of the decision they
 // report: accept/reject end an interval, a merit or seed verdict ends a
@@ -93,12 +93,13 @@ export class Tracer {
 // curves: what each would have done on exactly this J and b.
 export function ghostRuns(J, b, eta) {
   const out = {};
-  for (const method of ['bicgstab', 'vcycle', 'jacobi']) {
+  for (const method of ['bicgstab', 'micpcg', 'vcycle', 'jacobi']) {
     const A = new Stencil5(J.w, J.h);
     A.rows.set(J.rows);
     const ctx = { delta: new Float64Array(A.n), linearHistory: [] };
     const gen = (function* () {
       if (method === 'jacobi') return yield* jacobiOnly(A, b, ctx, { eta });
+      if (method === 'micpcg') return yield* micpcg(A, b, ctx, { eta });
       const levels = yield* buildHierarchy(A);
       return method === 'vcycle' ? yield* vcycleOnly(A, levels, b, ctx, { eta }) : yield* bicgstab(A, levels, b, ctx, { eta });
     })();

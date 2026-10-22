@@ -228,6 +228,7 @@ select {
   gap: 10px;
 }
 .board-head { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: end; justify-content: space-between; }
+.board-checks { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
 
 /* The board, in its frame: wood around slate, aluminium around whiteboard. */
 .frame {
@@ -278,6 +279,16 @@ select {
 .code li { white-space: pre; padding: 0 12px 0 10px; border-left: 3px solid transparent; }
 .code li.on { background: var(--hl); border-left-color: var(--write); }
 .doc-text { margin: 0; max-width: 65ch; }
+.op-math {
+  margin: 0;
+  padding: 8px 10px;
+  background: var(--code-bg);
+  border-left: 3px solid var(--read);
+  border-radius: 6px;
+  overflow-x: auto;
+  font: 0.78rem/1.45 "JetBrains Mono", ui-monospace, monospace;
+  color: var(--ink);
+}
 .op-note {
   margin: 0;
   font-family: Kalam, "Comic Neue", cursive;

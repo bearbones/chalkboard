@@ -25,6 +25,7 @@ const ui = {
   speedOut: $('speedOut'),
   field: $('field'),
   vel: $('vel'),
+  vals: $('vals'),
   linear: $('linear'),
   ls: $('ls'),
   warm: $('warm'),
@@ -209,7 +210,7 @@ function render(now) {
   board.resize();
   const fd = fieldData(solver, tracer, ui.field.value);
   const tau = Math.min(1500, Math.max(120, 2000 / rate()));
-  board.draw(solver, tracer, fd, pal, { velocities: ui.vel.checked, now, trailTau: tau });
+  board.draw(solver, tracer, fd, pal, { velocities: ui.vel.checked, values: ui.vals?.checked, now, trailTau: tau });
   if (!state.dirty && !resized) return;
   state.dirty = false;
   resized = false;
@@ -259,11 +260,13 @@ function faceName(f, w) {
 
 function renderNotes() {
   const { tracer, solver } = state;
+  const mathEl = $('opMath');
   if (state.failed) {
     setText($('docTitle'), 'The simulation stopped');
     setText($('docText'), `${state.failed}. Reset to try again, or change the solver lab settings.`);
     $('code').replaceChildren();
     $('opNote').hidden = true;
+    if (mathEl) mathEl.hidden = true;
     return;
   }
   const doc = docFor(tracer, solver.opt.linear);
@@ -287,6 +290,73 @@ function renderNotes() {
   const label = tracer.op?.label;
   note.hidden = !label;
   if (label) setText(note, label);
+  if (mathEl) {
+    const math = opMathFor(solver, tracer);
+    mathEl.hidden = !math;
+    if (math) setText(mathEl, math);
+  }
+}
+
+function opMathFor(solver, tracer) {
+  const op = tracer.op;
+  if (!op || op.cell < 0) return '';
+  const { ch, x } = solver;
+  const i = op.cell;
+  const buf = activeBuffer(solver, tracer);
+  switch (op.op) {
+    case 'source': {
+      const ml = ch.water[i] - buf.mv[i];
+      return (
+        `cell ${cellName(i, ch.w)} · p = ${fmtPa((buf.p[i] - P.P_ATM) * P.PA_PER_UNIT)} gauge (${((buf.p[i] * P.PA_PER_UNIT) / 101325).toFixed(4)} atm)\n` +
+        `T = ${buf.T[i].toFixed(2)} K · m_liq = ${fmt(ml)} mg · m_vap = ${fmt(buf.mv[i])} mg · m_air = ${fmt(ch.ma[i])} mg\n` +
+        `O_i = m_liq/ρ + V_gas = ${fmt(ml / P.RHO)} + ${fmt(buf.Vg[i])} = ${fmt(buf.O[i])} cells   (dO/dp = ${fmt(buf.slope[i])})`
+      );
+    }
+    case 'face': {
+      const f = op.face;
+      if (!f) return '';
+      if (f.dir === 'top') {
+        const c = (x.dt * 2) / ch.inertia(i);
+        const dp = buf.p[i] - P.P_ATM;
+        return `top face ${cellName(i, ch.w)} · Δp = p_i − p_atm = ${fmt(dp)}\nv_top = v0 + dt·g − c·Δp = ${fmt(buf.top[i])} cells/tick`;
+      }
+      const j = f.b;
+      const c = (x.dt * 2) / (ch.inertia(i) + ch.inertia(j));
+      const dp = buf.p[j] - buf.p[i];
+      if (f.dir === 'x') {
+        return `face ${cellName(i, ch.w)}→${cellName(j, ch.w)} · Δp = p_b − p_a = ${fmt(dp)}\nu = u0 − c·Δp = ${fmt(x.u0[i])} − ${fmt(c)}·(${fmt(dp)}) = ${fmt(buf.u[i])}`;
+      }
+      return `face ${cellName(i, ch.w)}→${cellName(j, ch.w)} · Δp = p_b − p_a = ${fmt(dp)}\nv = v0 + dt·g − c·Δp = ${fmt(buf.v[i])}`;
+    }
+    case 'residual': {
+      const xx = i % ch.w,
+        y = (i / ch.w) | 0;
+      const div = buf.u[i] - (xx > 0 ? buf.u[i - 1] : 0) + buf.v[i] - (y > 0 ? buf.v[i - ch.w] : buf.top[xx]);
+      return `cell ${cellName(i, ch.w)} · div = ${fmt(div)}   dt·div = ${fmt(x.dt * div)}\nR_i = O_i − 1 − dt·div = ${fmt(buf.O[i])} − 1 − (${fmt(x.dt * div)}) = ${fmt(buf.R[i])}`;
+    }
+    case 'jrow': {
+      const s = stencilRow(x.J, i);
+      const faceSum = s.up + s.left + s.right + s.down;
+      return `cell ${cellName(i, ch.w)} · dO/dp = ${fmt(x.slope[i])} · Σ J_ij = ${fmt(faceSum)}\nJ_ii = ${fmt(s.center)}   [U ${fmt(s.up)}, L ${fmt(s.left)}, R ${fmt(s.right)}, D ${fmt(s.down)}]`;
+    }
+    case 'jacobi': {
+      const lvl = op.level ?? 0;
+      const L = x.levels?.[lvl];
+      const w = L ? L.A.w : ch.w;
+      const diag = L ? L.A.diag(i) : x.J.diag(i);
+      return `${lvl ? 'block' : 'cell'} ${cellName(i, w)} (level ${lvl}) · diag = ${fmt(diag)} → z_new = ${fmt(op.value)}`;
+    }
+    case 'mic-factor':
+      return `cell ${cellName(i, ch.w)} · −J_ii = ${fmt(-x.J.diag(i))} → L_ii⁻¹ = ${fmt(op.value)}`;
+    case 'pc-fwd':
+      return `cell ${cellName(i, ch.w)} · forward sweep q_i = ${fmt(op.value)}   (${op.reads.length} predecessor${op.reads.length === 1 ? '' : 's'})`;
+    case 'pc-bwd':
+      return `cell ${cellName(i, ch.w)} · backward sweep z_i = ${fmt(op.value)}   (${op.reads.length} successor${op.reads.length === 1 ? '' : 's'})`;
+    case 'heat':
+      return `cell ${cellName(i, ch.w)} · ΔH = ${fmt(op.value)} µJ → H = ${fmt(x.H[i])} µJ`;
+    default:
+      return '';
+  }
 }
 
 function fmt(v, digits = 3) {
@@ -441,6 +511,7 @@ ui.field.addEventListener('change', () => {
   state.dirty = true;
 });
 ui.vel.addEventListener('change', () => (state.dirty = true));
+ui.vals?.addEventListener('change', () => (state.dirty = true));
 for (const el of [ui.linear, ui.ls, ui.warm]) {
   el.addEventListener('change', () => {
     Object.assign(state.solver.opt, labOptions());

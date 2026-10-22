@@ -365,6 +365,178 @@ export function* vcycleOnly(A, levels, b, ctx, { eta, maxIter = 200 }) {
   throw new LinearFailure(`V-cycles did not reach η in ${maxIter} iterations`);
 }
 
+// Mirrored MIC(0)-preconditioned Conjugate Gradient on (−A)·δ = −b
+// (since A has negative diagonal and non-negative off-diagonals, −A is SPD).
+export function* micpcg(A, b, ctx, { eta, maxIter = 400 }) {
+  const n = A.n,
+    w = A.w;
+  const x = ctx.delta;
+  x.fill(0);
+  const bnorm = normInf(b);
+  ctx.linearHistory.push(1);
+  if (bnorm === 0) return { iterations: 0, rel: 0 };
+
+  const pre = [new Float64Array(n), new Float64Array(n)];
+  const fwd = new Float64Array(n),
+    other = new Float64Array(n),
+    z = new Float64Array(n),
+    r = new Float64Array(n),
+    d = new Float64Array(n),
+    q = new Float64Array(n);
+  ctx.micZ = z;
+  ctx.micPre = pre[0];
+  for (let i = 0; i < n; i++) r[i] = -b[i]; // r = (−b) − (−A)·0
+
+  const idx = (k, rev) => ((k / w) | 0) * w + (rev ? w - 1 - (k % w) : k % w);
+  const prevSlot = (rev) => (rev ? RIGHT : LEFT);
+  const nextSlot = (rev) => (rev ? LEFT : RIGHT);
+
+  yield { t: 'enter', kind: 'hierarchy', label: 'Build mirrored MIC(0) incomplete Cholesky factors' };
+  for (let rev = 0; rev < 2; rev++) {
+    const p = pre[rev];
+    yield { t: 'enter', kind: 'sweep', label: `MIC(0) factor (${rev ? 'right→left' : 'left→right'})`, level: 0 };
+    for (let k = 0; k < n; k++) {
+      const i = idx(k, rev);
+      const full = -A.diag(i);
+      let pivot = full;
+      const reads = [];
+      const jh = A.column(i, prevSlot(rev));
+      if (jh >= 0) {
+        const edge = A.get(i, prevSlot(rev)),
+          perp = Math.max(0, A.get(jh, DOWN)),
+          qj = p[jh] * p[jh];
+        if (edge > 0) {
+          pivot -= edge * (edge + 0.97 * perp) * qj;
+          reads.push(jh);
+        }
+      }
+      const jv = A.column(i, UP);
+      if (jv >= 0) {
+        const edge = A.get(i, UP),
+          perp = Math.max(0, A.get(jv, nextSlot(rev))),
+          qj = p[jv] * p[jv];
+        if (edge > 0) {
+          pivot -= edge * (edge + 0.97 * perp) * qj;
+          reads.push(jv);
+        }
+      }
+      if (pivot < 0.25 * full) pivot = full;
+      p[i] = pivot > 0 ? 1 / Math.sqrt(pivot) : 0;
+      yield { t: 'op', op: 'mic-factor', level: 0, cell: i, reads, value: p[i] };
+    }
+    yield { t: 'leave', kind: 'sweep' };
+  }
+  yield { t: 'leave', kind: 'hierarchy' };
+
+  function* applyMic() {
+    yield { t: 'enter', kind: 'vcycle', label: 'z = M⁻¹r  (mirrored MIC(0) triangular sweeps)' };
+    for (let rev = 0; rev < 2; rev++) {
+      const p = pre[rev],
+        out = rev ? other : z,
+        tag = rev ? 'R→L' : 'L→R';
+      yield { t: 'enter', kind: 'sweep', label: `Forward substitution (${tag})`, level: 0 };
+      for (let k = 0; k < n; k++) {
+        const i = idx(k, rev);
+        let val = r[i];
+        const reads = [];
+        const jh = A.column(i, prevSlot(rev));
+        if (jh >= 0) {
+          const edge = A.get(i, prevSlot(rev));
+          if (edge > 0) {
+            val += edge * p[jh] * fwd[jh];
+            reads.push(jh);
+          }
+        }
+        const jv = A.column(i, UP);
+        if (jv >= 0) {
+          const edge = A.get(i, UP);
+          if (edge > 0) {
+            val += edge * p[jv] * fwd[jv];
+            reads.push(jv);
+          }
+        }
+        fwd[i] = val * p[i];
+        yield { t: 'op', op: 'pc-fwd', level: 0, cell: i, reads, value: fwd[i] };
+      }
+      yield { t: 'leave', kind: 'sweep' };
+
+      yield { t: 'enter', kind: 'sweep', label: `Backward substitution (${tag})`, level: 0 };
+      for (let k = n - 1; k >= 0; k--) {
+        const i = idx(k, rev);
+        let val = fwd[i];
+        const reads = [];
+        const jh = A.column(i, nextSlot(rev));
+        if (jh >= 0) {
+          const edge = A.get(i, nextSlot(rev));
+          if (edge > 0) {
+            val += edge * p[i] * out[jh];
+            reads.push(jh);
+          }
+        }
+        const jv = A.column(i, DOWN);
+        if (jv >= 0) {
+          const edge = A.get(i, DOWN);
+          if (edge > 0) {
+            val += edge * p[i] * out[jv];
+            reads.push(jv);
+          }
+        }
+        out[i] = val * p[i];
+        yield { t: 'op', op: 'pc-bwd', level: 0, cell: i, reads, value: out[i] };
+      }
+      yield { t: 'leave', kind: 'sweep' };
+    }
+    for (let i = 0; i < n; i++) z[i] = 0.5 * (z[i] + other[i]);
+    yield vec('z = ½(z_L→R + z_R→L)');
+    yield { t: 'leave', kind: 'vcycle' };
+  }
+
+  let rz = 0;
+  for (let it = 1; it <= maxIter; it++) {
+    yield { t: 'enter', kind: 'krylov', label: `MIC(0)-PCG iteration ${it}`, iteration: it };
+    yield* applyMic();
+    const rzNew = dot(r, z);
+    if (!(rzNew > 0) || !isFinite(rzNew)) throw new LinearFailure('MIC(0)-PCG breakdown (r·z ≤ 0)');
+    if (it === 1) {
+      d.set(z);
+      yield vec('d = z');
+    } else {
+      const beta = rzNew / rz;
+      for (let i = 0; i < n; i++) d[i] = z[i] + beta * d[i];
+      yield vec('d = z + β·d');
+    }
+    rz = rzNew;
+
+    yield { t: 'enter', kind: 'sweep', label: 'q = (−A)·d', level: 0 };
+    for (let i = 0; i < n; i++) {
+      q[i] = -A.rowTimes(i, d);
+      yield { t: 'op', op: 'matvec', level: 0, cell: i, reads: A.neighbours(i), field: 'q' };
+    }
+    yield { t: 'leave', kind: 'sweep' };
+
+    const dq = dot(d, q);
+    if (!(dq > 0) || !isFinite(dq)) throw new LinearFailure('MIC(0)-PCG breakdown (d·q ≤ 0)');
+    const alpha = rz / dq;
+    for (let i = 0; i < n; i++) x[i] += alpha * d[i];
+    yield vec('δ += α·d');
+
+    yield { t: 'enter', kind: 'sweep', label: 'True residual r = (−b) − (−A)·δ', level: 0 };
+    for (let i = 0; i < n; i++) {
+      r[i] = A.rowTimes(i, x) - b[i];
+      yield { t: 'op', op: 'matvec', level: 0, cell: i, reads: A.neighbours(i), field: 'true' };
+    }
+    yield { t: 'leave', kind: 'sweep' };
+
+    const rel = normInf(r) / bnorm;
+    ctx.linearHistory.push(rel);
+    yield { t: 'op', op: 'check', cell: -1, reads: [], label: `‖b − Aδ‖∞/‖b‖∞ = ${rel.toExponential(2)}  (target ${eta})`, value: rel };
+    yield { t: 'leave', kind: 'krylov' };
+    if (rel <= eta) return { iterations: it, rel };
+    if (!isFinite(rel)) throw new LinearFailure('MIC(0)-PCG diverged');
+  }
+  throw new LinearFailure(`MIC(0)-PCG did not reach η in ${maxIter} iterations`);
+}
+
 export function drain(gen) {
   for (;;) {
     const { value, done } = gen.next();

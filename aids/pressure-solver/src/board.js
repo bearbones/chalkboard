@@ -93,14 +93,25 @@ export function autoField(tr) {
   if (tr.pass) return { source: 'material', faces: 'pressure', residual: 'residual' }[tr.pass.pass];
   if (stage === 'prepass') return 'temperature';
   if (stage === 'jacobian') return 'slope';
-  if (stage === 'linear') return tr.hierarchy ? 'slope' : tr.byKind.level ? 'mg' : 'delta';
+  if (stage === 'linear') {
+    if (tr.op?.op === 'mic-factor') return 'mg';
+    return tr.hierarchy ? 'slope' : tr.byKind.level || tr.vcycle ? 'mg' : 'delta';
+  }
   if (stage === 'transport') return 'material';
   if (stage || tr.byKind.seed) return 'residual';
   return 'pressure'; // between intervals: the answer
 }
 
-// The vector a V-cycle level is writing right now, and how far the sweep got.
+// The vector a V-cycle level or MIC(0) preconditioner is writing right now.
 function mgVector(solver, tr) {
+  if (solver.opt.linear === 'micpcg') {
+    if (tr.op?.op === 'mic-factor' && solver.x.micPre) {
+      return { level: 0, values: solver.x.micPre, name: 'MIC(0) factor 1/√pivot', fresh: solver.ch.n };
+    }
+    if (solver.x.micZ) {
+      return { level: 0, values: solver.x.micZ, name: 'z = M⁻¹r (preconditioned residual)', fresh: solver.ch.n };
+    }
+  }
   const levels = solver.x.levels;
   const lvlSpan = tr.byKind.level;
   if (!levels || !lvlSpan) return null;
@@ -357,7 +368,7 @@ export class Board {
     g.stroke();
 
     // Coarse-level block outlines.
-    if (fd.level > 0 || tr.hierarchy) {
+    if (fd.level > 0 || (tr.hierarchy && solver.opt.linear !== 'micpcg')) {
       const L = this.geom[fd.level || tr.op?.level || 1];
       if (L) {
         g.strokeStyle = css(pal.ink, 0.55);
@@ -367,6 +378,9 @@ export class Board {
         g.setLineDash([]);
       }
     }
+
+    // Optional cell values and material chips (from edu-aids).
+    if (opts.values) this.drawValues(ch, buf, fd, lv, color, pal, px);
 
     // Face velocities.
     const showVel = opts.velocities || fd.field === 'pressure' || tr.stage === 'transport';
@@ -402,6 +416,66 @@ export class Board {
       g.lineWidth = 2.5 * px;
       g.strokeRect(x + 1.5 * px, y + 1.5 * px, 1 - 3 * px, 1 - 3 * px);
     }
+  }
+
+  drawValues(ch, buf, fd, lv, color, pal, px) {
+    const { g } = this;
+    const matColor = (i) => {
+      const ml = ch.water[i] - buf.mv[i];
+      const gasR = buf.mv[i] * P.R_VAP + ch.ma[i] * P.R_AIR;
+      const share = gasR > 0 ? (buf.mv[i] * P.R_VAP) / gasR : 0;
+      const gas = lerp(pal['gas-air'], pal['gas-vapour'], share);
+      return lerp(gas, pal.liquid, clamp01(ml / P.RHO));
+    };
+    const isDark = (rgb) => (0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]) / 255 < 0.48;
+    const shortVal = (v) => {
+      if (!isFinite(v)) return '';
+      if (v === 0) return '0';
+      const a = Math.abs(v);
+      if (a >= 1e3 || a < 1e-2) return v.toExponential(0).replace('e+', 'e');
+      return Number(v.toPrecision(2)).toString();
+    };
+    g.save();
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    if (fd.level === 0) {
+      g.font = `600 ${Math.max(8 * px, 0.25)}px "JetBrains Mono", ui-monospace, monospace`;
+      for (let i = 0; i < ch.n; i++) {
+        if (!ch.fluid[i]) continue;
+        const x = i % ch.w,
+          y = (i / ch.w) | 0;
+        const v = fd.values ? fd.values[i] : 0;
+        const bg = color(v, i);
+        if (fd.kind !== 'material') {
+          g.fillStyle = css(matColor(i));
+          g.fillRect(x + 0.08, y + 0.08, 0.16, 0.16);
+        }
+        let txt = '';
+        if (fd.kind === 'material') {
+          const lf = (ch.water[i] - buf.mv[i]) / P.RHO;
+          txt = lf > 0.01 && lf < 0.99 ? `${Math.round(lf * 100)}%` : '';
+        } else {
+          txt = shortVal(v);
+        }
+        if (txt) {
+          g.fillStyle = isDark(bg) ? '#f4f6fa' : '#141821';
+          g.fillText(txt, x + 0.5, y + 0.54);
+        }
+      }
+    } else {
+      g.font = `600 ${Math.max(10 * px, 0.34)}px "JetBrains Mono", ui-monospace, monospace`;
+      for (let I = 0; I < lv.rects.length; I++) {
+        const r = lv.rects[I];
+        const v = fd.values[I];
+        const bg = color(v, -1);
+        const txt = shortVal(v);
+        if (txt) {
+          g.fillStyle = isDark(bg) ? '#f4f6fa' : '#141821';
+          g.fillText(txt, 0.5 * (r[0] + r[2]), 0.5 * (r[1] + r[3]));
+        }
+      }
+    }
+    g.restore();
   }
 
   drawVelocities(ch, buf, pal, px) {

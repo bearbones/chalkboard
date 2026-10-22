@@ -58,7 +58,10 @@
           <span>Colour by</span>
           <select id="field"></select>
         </label>
-        <label class="check"><input id="vel" type="checkbox"> velocities</label>
+        <div class="board-checks">
+          <label class="check"><input id="vals" type="checkbox"> values</label>
+          <label class="check"><input id="vel" type="checkbox"> velocities</label>
+        </div>
       </div>
       <div class="frame"><canvas id="board" aria-label="Simulation grid"></canvas></div>
       <div class="legend">
@@ -74,6 +77,7 @@
       <h2 id="docTitle">Ready</h2>
       <ol id="code" class="code"></ol>
       <p id="docText" class="doc-text"></p>
+      <pre id="opMath" class="op-math" hidden></pre>
       <p id="opNote" class="op-note" hidden></p>
     </section>
 
@@ -116,6 +120,7 @@
         <span>Linear solver</span>
         <select id="linear">
           <option value="bicgstab">BiCGStab + V-cycle (default)</option>
+          <option value="micpcg">MIC(0)-PCG (mirrored wavefront)</option>
           <option value="vcycle">V-cycles alone</option>
           <option value="jacobi">Weighted Jacobi alone</option>
         </select>
@@ -128,7 +133,7 @@
   </main>
 
   <footer class="foot">
-    <p>A teaching implementation of a nonlinear pressure solver, on a 16×16 grid of 1 mm cells. It runs the full structure of a production solve: frozen enthalpy, a local-equilibrium source, backward-Euler face kicks, a 5-point Jacobian, BiCGStab with an aggregation V-cycle, a backtracking line search, and adaptive intervals that halve dt on failure. It leaves out heat recovery, capillarity and viscosity (a uniform drag stands in for it), and fallback solvers.</p>
+    <p>A teaching implementation of a nonlinear pressure solver on a 16×16 grid of 1 mm cells. It runs the full structure of a coupled solve: frozen enthalpy, a local-equilibrium phase split with analytic compliance, backward-Euler face kicks, a 5-point Jacobian, BiCGStab preconditioned by an aggregation V-cycle (or mirrored MIC(0)-PCG), a backtracking line search, and adaptive intervals that halve dt on failure. It omits heat recovery, capillarity, and full viscous stress (using a uniform drag Coefficient in its place).</p>
   </footer>
 </div>
 <script type="module" src="src/app.js"></script>

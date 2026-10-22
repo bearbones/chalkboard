@@ -2,7 +2,7 @@
 
 import { css } from './board.js';
 
-const METHOD_NAME = { bicgstab: 'BiCGStab + V-cycle', vcycle: 'V-cycles alone', jacobi: 'Jacobi alone' };
+const METHOD_NAME = { bicgstab: 'BiCGStab + V-cycle', micpcg: 'MIC(0)-PCG', vcycle: 'V-cycles alone', jacobi: 'Jacobi alone' };
 
 function setup(canvas) {
   const r = canvas.getBoundingClientRect();
@@ -155,7 +155,7 @@ export function drawLinear(canvas, pal, live, liveMethod, ghosts, eta) {
   };
   const summary = [];
   if (ghosts) {
-    for (const m of ['jacobi', 'vcycle', 'bicgstab']) {
+    for (const m of ['jacobi', 'vcycle', 'micpcg', 'bicgstab']) {
       const gh = ghosts[m];
       if (!gh) continue;
       if (gh.pts.length > 1) path(gh.pts, m === liveMethod ? css(pal.write, 0.4) : css(pal.ink, 0.38), 1.4, [4, 3]);

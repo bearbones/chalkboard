@@ -57,6 +57,31 @@ export function saturationPressurePa(T) {
   return x * x * x * x * 1e6;
 }
 
+// Analytic derivative dp_sat/dT (Pa/K) of saturationPressurePa(T).
+export function saturationSlopePa(T) {
+  if (T < 273.16) {
+    return T > 0 ? saturationPressurePa(T) * (2.5e6 / (R_VAP * T * T)) : 0;
+  }
+  if (T > 640) {
+    return (40 / T) * saturationPressurePa(T);
+  }
+  const dth = T - N[9];
+  const th = T + N[8] / dth;
+  const thp = 1 - N[8] / (dth * dth);
+  const A = th * th + N[0] * th + N[1];
+  const B = N[2] * th * th + N[3] * th + N[4];
+  const C = N[5] * th * th + N[6] * th + N[7];
+  const Ap = (2 * th + N[0]) * thp;
+  const Bp = (2 * N[2] * th + N[3]) * thp;
+  const Cp = (2 * N[5] * th + N[6]) * thp;
+  const root = Math.sqrt(B * B - 4 * A * C);
+  const den = -B + root;
+  const dp = -Bp + (2 * B * Bp - 4 * (Ap * C + A * Cp)) / (2 * root);
+  const x = (2 * C) / den;
+  const xp = (2 * (Cp * den - C * dp)) / (den * den);
+  return 4e6 * x * x * x * xp;
+}
+
 // Saturation temperature at pressure pPa (inverse of the above, by bisection).
 export function saturationTemperature(pPa) {
   let lo = 250,
@@ -112,5 +137,18 @@ export function phaseSplit(water, ma, H, p) {
   const gasR = mv * R_VAP + ma * R_AIR;
   const Vg = gasR > 0 ? gasVolume(gasR, T, p) : 0;
   const ml = water - mv;
-  return { mv, ml, T, Vg, occupancy: ml / RHO + Vg };
+  let slope = 0;
+  if (gasR > 0 && p > 0) {
+    const cap = ml * CP_LIQ + mv * CP_VAP + ma * CP_AIR;
+    const dTdmv = cap > 0 ? -(LATENT_0 + (CP_VAP - CP_LIQ) * T) / cap : 0;
+    let dmvdp = 0;
+    if (mv > 0 && ml > 0) {
+      const x = (mv * R_VAP) / gasR;
+      const dxdmv = (R_VAP * ma * R_AIR) / (gasR * gasR);
+      const denom = saturationSlopePa(T) * dTdmv - pPa * dxdmv;
+      if (denom < 0 && isFinite(denom)) dmvdp = (PA_PER_UNIT * x) / denom;
+    }
+    slope = dmvdp * (-1 / RHO + (1000 * (R_VAP * T + gasR * dTdmv)) / (PA_PER_UNIT * p)) - Vg / p;
+  }
+  return { mv, ml, T, Vg, occupancy: ml / RHO + Vg, slope };
 }

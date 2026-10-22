@@ -12,7 +12,7 @@
 // Newton drives max|R| below 1e-9.
 
 import * as P from './physics.js';
-import { Stencil5, buildHierarchy, bicgstab, jacobiOnly, vcycleOnly, LinearFailure, UP, LEFT, CENTER, RIGHT, DOWN } from './linear.js';
+import { Stencil5, buildHierarchy, bicgstab, micpcg, jacobiOnly, vcycleOnly, LinearFailure, UP, LEFT, CENTER, RIGHT, DOWN } from './linear.js';
 
 // Trace-span ranks: the "Stop at" granularity steps to the next span whose rank
 // is at or above (≤) the chosen one.
@@ -116,6 +116,7 @@ function evalBuffer(ch) {
     T: new Float64Array(n),
     Vg: new Float64Array(n),
     O: new Float64Array(n), // occupancy m_liq/ρ + V_gas
+    slope: new Float64Array(n), // analytic dO/dp from phaseSplit
     u: new Float64Array(n),
     v: new Float64Array(n),
     top: new Float64Array(ch.w),
@@ -169,6 +170,7 @@ export class PressureSolver {
       buf.T[i] = s.T;
       buf.Vg[i] = s.Vg;
       buf.O[i] = s.occupancy;
+      buf.slope[i] = s.slope;
       yield { t: 'op', op: 'source', cell: i, reads: [] };
     }
     yield { t: 'leave', kind: 'pass' };
@@ -233,13 +235,15 @@ export class PressureSolver {
         x.slope[i] = 0;
         continue;
       }
-      // Source slope dO/dp by a one-sided probe (a production solver would use analytic slopes,
-      // with a finite-difference probe as its fallback).
+      // Analytic source slope dO/dp (with a one-sided probe toward vapour birth
+      // when a pure-liquid cell has a negative residual).
       const gasFree = cur.mv[i] + ch.ma[i] === 0;
-      let eps = (gasFree ? 1e-9 : Math.sqrt(Number.EPSILON)) * Math.max(1, Math.abs(cur.p[i]));
-      if (gasFree && cur.R[i] < 0) eps = -eps; // probe toward vapour birth
-      const probe = P.phaseSplit(ch.water[i], ch.ma[i], x.H[i], cur.p[i] + eps);
-      const slope = (probe.occupancy - cur.O[i]) / eps;
+      let slope = cur.slope[i];
+      if (gasFree && cur.R[i] < 0) {
+        const eps = -1e-9 * Math.max(1, Math.abs(cur.p[i]));
+        const probe = P.phaseSplit(ch.water[i], ch.ma[i], x.H[i], cur.p[i] + eps);
+        slope = (probe.occupancy - cur.O[i]) / eps;
+      }
       x.slope[i] = slope;
       let d = slope;
       const reads = [];
@@ -274,6 +278,7 @@ export class PressureSolver {
     yield { t: 'enter', kind: 'stage', label: `Linear solve J·δ = −R  (${linearName(opt.linear)})`, stage: 'linear' };
     let result;
     if (opt.linear === 'jacobi') result = yield* jacobiOnly(x.J, b, x, { eta: opt.eta });
+    else if (opt.linear === 'micpcg') result = yield* micpcg(x.J, b, x, { eta: opt.eta });
     else {
       x.levels = yield* buildHierarchy(x.J);
       if (opt.linear === 'vcycle') result = yield* vcycleOnly(x.J, x.levels, b, x, { eta: opt.eta });
@@ -614,7 +619,7 @@ function faceList(ch, i) {
 }
 
 export function linearName(k) {
-  return k === 'jacobi' ? 'weighted Jacobi only' : k === 'vcycle' ? 'V-cycles only' : 'BiCGStab + V-cycle';
+  return k === 'jacobi' ? 'weighted Jacobi only' : k === 'vcycle' ? 'V-cycles only' : k === 'micpcg' ? 'MIC(0)-PCG' : 'BiCGStab + V-cycle';
 }
 function fmtAlpha(a) {
   return a >= 1 / 64 ? (a === 1 ? '1' : `1/${Math.round(1 / a)}`) : a.toExponential(1);

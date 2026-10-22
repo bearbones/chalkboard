@@ -1,9 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import * as P from '../aids/pressure-solver/src/physics.js';
 import { PressureSolver, DEFAULTS } from '../aids/pressure-solver/src/solver.js';
-import { drain, buildHierarchy, vcycle, bicgstab, LEFT, CENTER, RIGHT, UP, DOWN } from '../aids/pressure-solver/src/linear.js';
+import { drain, buildHierarchy, vcycle, bicgstab, micpcg, LEFT, CENTER, RIGHT, UP, DOWN } from '../aids/pressure-solver/src/linear.js';
 import { SCENARIOS } from '../aids/pressure-solver/src/scenarios.js';
-import { Tracer, eventRank } from '../aids/pressure-solver/src/trace.js';
+import { Tracer, eventRank, ghostRuns } from '../aids/pressure-solver/src/trace.js';
 import { DOCS, docFor } from '../aids/pressure-solver/src/docs.js';
 
 function scene(id) {
@@ -135,20 +136,63 @@ test('BiCGStab reaches the forcing tolerance on the trapped-pocket system', () =
   assert.ok(m / bn <= 0.01 + 1e-12);
 });
 
-test('the trace is well nested and every stop has a doc line', () => {
-  const { ch, solver } = scene('boil');
-  const tr = new Tracer(ch.n);
-  const gen = solver.interval();
-  for (;;) {
-    const { value: e, done } = gen.next();
-    if (done) break;
-    tr.push(e);
-    if (eventRank(e) <= 7) {
-      const d = docFor(tr, solver.opt.linear);
-      const line = d.line(tr);
-      assert.ok(line >= 0 && line < d.code.length, `${d.title}: line ${line}`);
+test('MIC(0)-PCG reaches the forcing tolerance on open and trapped systems', () => {
+  for (const id of ['still', 'hot', 'collapse']) {
+    const { A, b } = firstSystem(id);
+    const ctx = { delta: new Float64Array(A.n), linearHistory: [] };
+    const r = drain(micpcg(A, b, ctx, { eta: 0.01 }));
+    assert.ok(r.rel <= 0.01 && r.iterations < 60, `${id}: rel=${r.rel}, iter=${r.iterations}`);
+    let m = 0,
+      bn = 0;
+    for (let i = 0; i < A.n; i++) {
+      m = Math.max(m, Math.abs(b[i] - A.rowTimes(i, ctx.delta)));
+      bn = Math.max(bn, Math.abs(b[i]));
     }
+    assert.ok(m / bn <= 0.01 + 1e-12);
   }
-  assert.equal(tr.stack.length, 0);
-  assert.ok(Object.keys(DOCS).length >= 10);
+  const { A, b } = firstSystem('hot');
+  const ghosts = ghostRuns(A, b, 0.01);
+  assert.ok(ghosts.micpcg.pts.length > 1 && ghosts.micpcg.ok && ghosts.bicgstab.pts.length > 1);
+});
+
+test('analytic phaseSplit occupancy slope matches finite differences across regimes', () => {
+  const cases = [
+    // Subcooled pure liquid
+    { water: P.RHO, ma: 0, H: P.enthalpy(P.RHO, 0, 0, 300), p: P.P_ATM },
+    // Air + liquid pocket
+    { water: 0.3 * P.RHO, ma: 0.7 * P.RHO_AIR_ATM, H: P.enthalpy(0.3 * P.RHO, 0, 0.7 * P.RHO_AIR_ATM, 320), p: 1.1 * P.P_ATM },
+    // Two-phase liquid + vapour boiling cell (clamped branch)
+    { water: 0.6 * P.RHO, ma: 0, H: P.enthalpy(0.55 * P.RHO, 0.05 * P.RHO, 0, 375), p: P.P_ATM },
+    // Superheated pure vapour (all-vapour branch)
+    { water: 0.4, ma: 0.1, H: P.enthalpy(0, 0.4, 0.1, 410), p: P.P_ATM },
+  ];
+  for (const c of cases) {
+    const s0 = P.phaseSplit(c.water, c.ma, c.H, c.p);
+    const h = 1e-4 * c.p;
+    const sp = P.phaseSplit(c.water, c.ma, c.H, c.p + h);
+    const sm = P.phaseSplit(c.water, c.ma, c.H, c.p - h);
+    const fd = (sp.occupancy - sm.occupancy) / (2 * h);
+    assert.ok(Math.abs(s0.slope - fd) <= 1e-3 * Math.abs(fd) + 1e-12, `slope=${s0.slope}, fd=${fd}`);
+  }
+});
+
+test('the trace is well nested and every stop has a doc line', () => {
+  for (const linear of ['bicgstab', 'micpcg']) {
+    const { ch, solver } = scene('boil');
+    solver.opt.linear = linear;
+    const tr = new Tracer(ch.n);
+    const gen = solver.interval();
+    for (;;) {
+      const { value: e, done } = gen.next();
+      if (done) break;
+      tr.push(e);
+      if (eventRank(e) <= 7) {
+        const d = docFor(tr, solver.opt.linear);
+        const line = d.line(tr);
+        assert.ok(line >= 0 && line < d.code.length, `${linear} / ${d.title}: line ${line}`);
+      }
+    }
+    assert.equal(tr.stack.length, 0);
+  }
+  assert.ok(Object.keys(DOCS).length >= 12);
 });

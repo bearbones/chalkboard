@@ -42,7 +42,7 @@ export const SCENARIOS = [
     id: 'still',
     name: 'Still water',
     blurb:
-      'A tank of water under air, nothing happening. The first solve starts cold: the solver tries three seed guesses, keeps the best, and Newton finishes the job. Watch which seed wins and why.',
+      'A tank of water under air at rest. Starting without a prior pressure field, the solver evaluates three cold seed guesses, keeps the one with the smallest residual, and refines it with Newton.',
     build() {
       const ch = new Chamber(W, H);
       fillTank(ch, 6, 300);
@@ -54,7 +54,7 @@ export const SCENARIOS = [
     id: 'hot',
     name: 'Sudden heating',
     blurb:
-      'An air pocket trapped under an inverted cup gets a sudden burst of heat (300 K → 450 K). Its gas-law volume jumps by half, so its residual jumps to +0.5 cell volumes. Liquid cannot compress, so Newton must raise the pressure everywhere in a smooth, connected bump.',
+      'An air pocket trapped under an inverted cup receives a sudden heat pulse (300 K → 450 K). Its gas-law volume increases by 50%, raising its residual to +0.5 cell volumes. Because the surrounding liquid is incompressible, Newton raises the pressure across the connected water column to accelerate fluid outward.',
     build() {
       const ch = new Chamber(W, H);
       fillTank(ch, 5, 300);
@@ -83,7 +83,7 @@ export const SCENARIOS = [
     id: 'cold',
     name: 'Sudden chill',
     blurb:
-      'A pocket of warm, humid air (345 K, 95% saturated) is trapped under a cup whose walls are suddenly held at 290 K. Each interval the prepass conducts heat out of the cells touching the walls: their air contracts and vapour condenses to dew. The residual turns negative there, Newton lowers the pocket pressure, and water starts to climb into the cup.',
+      'A pocket of warm, humid air (345 K, 95% saturated) is trapped under a cup whose walls are held at 290 K. During each prepass, wall conduction removes heat from the adjacent cells, contracting the air and condensing vapour into liquid. The negative volume residual causes Newton to lower the pocket pressure, drawing water up into the cup.',
     build() {
       const ch = new Chamber(W, H);
       fillTank(ch, 5, 300);
@@ -109,7 +109,7 @@ export const SCENARIOS = [
     id: 'boil',
     name: 'Boiling pot',
     blurb:
-      'Water at 373.1 K, a hair under its boiling point, sits on a burner under a headspace of steam. As the bottom cells cross saturation, vapour is born inside cells that had no gas at all. Its slope dO/dp is large and negative (more pressure, less boiling), and the Jacobian diagonal lights up exactly there.',
+      'Water at 373.1 K sits on a heated floor beneath a steam headspace. As the bottom cells cross saturation, vapour forms inside previously all-liquid cells. Because higher pressure suppresses phase change, the analytic compliance slope dO/dp becomes large and negative along the boiling row.',
     build() {
       const ch = new Chamber(W, H);
       fillTank(ch, 6, 373.1);
@@ -120,6 +120,36 @@ export const SCENARIOS = [
       for (let x = 6; x <= 9; x++) ch.heater[(H - 1) * W + x] = 3000;
       ch.drag = 2;
       return { ch, prelude: 0, settle: true };
+    },
+  },
+  {
+    id: 'collapse',
+    name: 'Steam collapse',
+    blurb:
+      'A submerged pocket of pure steam in cooler water loses heat. As vapour condenses into liquid of much higher density, the pocket volume contracts sharply (R < 0). Newton finds the pressure drop across the surrounding water that accelerates liquid inward to fill the collapsing cavity.',
+    build() {
+      const ch = new Chamber(W, H);
+      fillTank(ch, 4, 345);
+      const pocket = [];
+      for (let y = 9; y <= 10; y++) for (let x = 6; x <= 9; x++) pocket.push([x, y]);
+      for (const [x, y] of pocket) {
+        const p = hydrostatic(y - 4 + 0.5);
+        const Tsat = P.saturationTemperature(p * P.PA_PER_UNIT);
+        const mv = 1 / P.gasVolume(P.R_VAP, Tsat + 0.5, p);
+        ch.setCell(y * W + x, { vapour: mv, air: 0.02 * airMassAt(p, Tsat + 0.5), T: Tsat + 0.5 });
+      }
+      ch.drag = 2;
+      return {
+        ch,
+        prelude: 0,
+        settle: true,
+        afterPrelude(ch) {
+          for (const [x, y] of pocket) {
+            const i = y * W + x;
+            ch.pulse[i] = -ch.mv[i] * P.CP_VAP * 18;
+          }
+        },
+      };
     },
   },
 ];
