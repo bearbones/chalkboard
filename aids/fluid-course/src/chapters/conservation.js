@@ -16,7 +16,7 @@ export const chapter = {
   blurb: 'Control volumes, fluxes and the divergence theorem, building up to the Navier–Stokes equations.',
   minutes: 45,
   html: String.raw`
-<p class="lead-in">Every equation in this course is a piece of bookkeeping. Draw a box anywhere in a fluid and count something inside it: mass, momentum, energy. The amount can change for only two reasons. Some crosses the walls of the box, or something inside the box makes or destroys it. Write that down for mass and you get the continuity equation. Write it down for momentum, with the right account of the forces, and you get the Navier–Stokes equations. Write it down for a row of grid cells and you get the finite-volume method, which is how most fluid solvers keep their books.</p>
+<p class="lead-in">Every conservation law in this course is an accounting balance. Given a fixed region in a fluid and a quantity inside it—mass, momentum, or energy—the total inside can change for only two reasons: either the quantity crosses the boundary of the region, or a source inside creates or destroys it. Applying the balance to mass gives the continuity equation; applying it to momentum, with a constitutive law for the forces, gives the Navier–Stokes equations; applying it to a row of grid cells gives the finite-volume method, which is how most fluid solvers discretise conservation laws.</p>
 
 <p>This chapter builds the equations from that one idea. It leans on the material derivative from <a href="#/viewpoints/material-derivative">Two ways of watching a flow</a> and uses vector notation ($\nabla$, $\nabla\cdot$) freely; the story of where that notation came from is told in <a href="#/notation/vectors">How the equations got their shape</a>. On the way you will meet an old embarrassment of the theory, d'Alembert's paradox, and see why the way you write a conservation law on a computer matters as much as the law itself.</p>
 
@@ -24,21 +24,21 @@ export const chapter = {
 
 <p>Pick a region of space and keep it fixed while the fluid streams through it. Engineers call it a <dfn data-term="control-volume">control volume</dfn>. Its boundary is the <em>control surface</em>, and at each point of that surface $\mathbf{n}$ is the unit normal pointing out of the region.</p>
 
-<p>Let $\phi$ be the amount of some quantity per unit volume: the density $\rho$ for mass, or $\rho\mathbf{u}$ for momentum. The <dfn data-term="flux">flux</dfn> $\mathbf{F}$ says how much of it crosses a surface, per unit area and per unit time. Fluid moving with velocity $\mathbf{u}$ carries its contents with it, so part of every flux is $\phi\,\mathbf{u}$. Some quantities also cross a surface without fluid crossing it: heat by conduction, momentum by viscous friction. Those parts are added to $\mathbf{F}$ too. Only the component along the normal matters: $\mathbf{F}\cdot\mathbf{n}\,\mathrm{d}S$ is the amount leaving through the patch $\mathrm{d}S$ each second. If it is negative, the quantity is coming in.</p>
+<p>Let $\phi$ be the amount of some quantity per unit volume, such as the density $\rho$ for mass or $\rho\mathbf{u}$ for momentum. The <dfn data-term="flux">flux</dfn> $\mathbf{F}$ measures how much of that quantity crosses a surface per unit area and per unit time. Because fluid moving at velocity $\mathbf{u}$ carries its contents with it, every flux includes an advective part $\phi\,\mathbf{u}$, alongside any non-advective transport such as heat conduction or viscous stress. Across a surface element $\mathrm{d}S$ with outward unit normal $\mathbf{n}$, only the normal component contributes, so $\mathbf{F}\cdot\mathbf{n}\,\mathrm{d}S$ is the rate at which the quantity leaves through $\mathrm{d}S$ (or enters, when $\mathbf{F}\cdot\mathbf{n} &lt; 0$).</p>
 
 <p>With a source $s$ (amount made per unit volume per unit time), the books for a fixed volume $V$ read</p>
 
 <div class="eq" id="eq-balance">$$\frac{\mathrm{d}}{\mathrm{d}t}\int_V \phi\,\mathrm{d}V \;=\; -\oint_S \mathbf{F}\cdot\mathbf{n}\,\mathrm{d}S \;+\; \int_V s\,\mathrm{d}V .$$<span class="eq-tag">(3.1)</span></div>
 
-<p>In words: the rate of change inside equals the net inflow through the walls plus whatever is made inside. Nothing else is allowed. This <em>integral form</em> is the fundamental statement. It needs no derivatives of $\phi$ or $\mathbf{F}$, so it still holds when the flow has a jump, such as a shock wave. That fact returns in <a href="#/shocks/rankine-hugoniot">the chapter on shocks</a>.</p>
+<p>Equation (3.1) states that the rate of change of the total inside $V$ equals the net inflow across the boundary $S$ plus the net production within $V$. Because this <em>integral form</em> requires no derivatives of $\phi$ or $\mathbf{F}$, it remains valid across discontinuities such as shock waves, as used in <a href="#/shocks/rankine-hugoniot">the chapter on shocks</a>.</p>
 
 <p>To turn (3.1) into a differential equation we need one theorem. The <strong>divergence theorem</strong> (Gauss's theorem) says that the total outflow through a closed surface equals the integral of the <dfn data-term="divergence">divergence</dfn> over the volume inside:</p>
 
 <div class="eq" id="eq-divergence-theorem">$$\oint_S \mathbf{F}\cdot\mathbf{n}\,\mathrm{d}S \;=\; \int_V \nabla\cdot\mathbf{F}\,\mathrm{d}V .$$<span class="eq-tag">(3.2)</span></div>
 
-<p>Here is the reason it is true. Cut the volume into many small boxes. For each one, the outflow through its faces is about $\nabla\cdot\mathbf{F}$ times its volume; that is what divergence means (see <a href="#/viewpoints/deformation">the previous chapter</a>). Now add up all the boxes. Every inner face is shared by two neighbours, and what leaves one enters the other, so the inner faces cancel in pairs. Only the outer surface is left. Keep this cancellation in mind. It is the whole idea of the finite-volume method at the end of the chapter.</p>
+<p>To see why (3.2) holds, partition the volume into many small boxes. For each small box, the net outflow across its faces is approximately $\nabla\cdot\mathbf{F}$ times its volume (<a href="#/viewpoints/deformation">the previous chapter</a>). When the outflows of all the small boxes are summed, every interior face is shared by two adjacent boxes with opposite outward normals, so the flux leaving one box equals the flux entering its neighbour and all interior faces cancel in pairs, leaving only the integral over the outer boundary $S$. The finite-volume method at the end of this chapter relies on the same pairwise cancellation on a discrete grid.</p>
 
-<p>Put (3.2) into (3.1). Because the box is fixed, the time derivative can move inside the integral. The result must hold for every box, however small, so the integrand itself must vanish:</p>
+<p>Substituting (3.2) into (3.1) and moving the time derivative inside the integral over the fixed volume $V$ gives an integral identity that holds for every control volume, however small. Wherever the integrand is continuous, it must vanish pointwise:</p>
 
 <div class="eq" id="eq-local">$$\frac{\partial \phi}{\partial t} + \nabla\cdot\mathbf{F} = s .$$<span class="eq-tag">(3.3)</span></div>
 
@@ -51,14 +51,14 @@ export const chapter = {
 <figure data-widget="conservation-box" data-preset="source" class="wide"><figcaption>A fixed control volume in a 2-D flow. The face fluxes are integrated by Gauss–Legendre quadrature on the exact velocity field; the source term is computed independently from the source's known strength. The divergence theorem says the two must agree, and the last readout shows that they do.</figcaption></figure>
 
 <div class="try"><ol>
-<li>Start with the box away from the source. Fluid enters on the side nearer the source and leaves on the far side, and the net outflow is zero. Move the box around: it stays zero.</li>
+<li>Start with the box away from the source. Fluid enters on the side nearer the source and leaves on the far side, and the net outflow is zero. Move the box around and verify that the net outflow stays zero.</li>
 <li>Drag the box over the dashed circle, the core where fluid is made. The net outflow jumps to $m = 2\pi$, and it stays there whether the box is small or large, as long as it holds the whole core.</li>
 <li>Put the left edge of the box through the centre of the core. The box now holds half the core, and half of $m$ leaves through its faces.</li>
-<li>Switch to the vortex, the stagnation point and the cylinder. Plenty of fluid crosses each face, yet every net outflow is zero: these flows are divergence-free.</li>
+<li>Switch to the vortex, the stagnation point and the cylinder. Plenty of fluid crosses each face, yet every net outflow is zero because these flows are divergence-free.</li>
 <li>Try the double gyre, and press Play if the figure is paused. The face fluxes change from moment to moment; the net stays zero at every instant.</li>
 </ol></div>
 
-<p>A fixed box is not the only choice. A <em>material volume</em> moves and deforms with the fluid, so no fluid crosses its surface; it is the continuum version of a fixed set of particles. Newton's laws apply to material volumes, not to fixed boxes, so we need to move between the two. The rule for doing that is the <strong>Reynolds transport theorem</strong>. For a material volume $V(t)$ that coincides with the fixed volume $V$ at the instant $t$,</p>
+<p>Instead of a fixed control volume, we can follow a <em>material volume</em> $V(t)$ that moves and deforms with the local fluid velocity so that no fluid crosses its boundary. Because Newton's laws of mechanics apply directly to a fixed body of matter (a material volume) rather than an Eulerian box, converting between the two requires the <strong>Reynolds transport theorem</strong>. For a material volume $V(t)$ that coincides with the fixed volume $V$ at time $t$,</p>
 
 <div class="eq" id="eq-transport">$$\frac{\mathrm{d}}{\mathrm{d}t}\int_{V(t)} \phi\,\mathrm{d}V \;=\; \int_V \frac{\partial \phi}{\partial t}\,\mathrm{d}V \;+\; \oint_S \phi\,\mathbf{u}\cdot\mathbf{n}\,\mathrm{d}S .$$<span class="eq-tag">(3.4)</span></div>
 
@@ -92,27 +92,27 @@ export const chapter = {
 
 <div class="eq" id="eq-incompressible">$$\nabla\cdot\mathbf{u} = 0 .$$<span class="eq-tag">(3.8)</span></div>
 
-<p>Read this condition carefully. It does <em>not</em> say the density is the same everywhere. Sea water is saltier and colder in some places than others, so its density varies by a few parts in a thousand, yet each parcel keeps its own density as it moves, and the flow is incompressible to high accuracy. Nor does it say that liquids cannot be compressed. It says that the pressure changes in this flow are too small to squeeze the parcels noticeably. For a gas this means the flow speed is small compared with the speed of sound. Density changes then scale roughly as the square of the <a href="#/similarity/numbers">Mach number</a>, which is why air at road speeds behaves as an incompressible fluid.</p>
+<p>Condition (3.8) is a statement about the flow rather than the fluid alone: it holds whenever the pressure variations in the flow are too small to compress individual parcels noticeably, which for a gas means that the flow speed is small compared with the speed of sound (density variations scale as the square of the <a href="#/similarity/numbers">Mach number</a>, so air at road speeds behaves as incompressible). Moreover, $\mathrm{D}\rho/\mathrm{D}t = 0$ requires only that each parcel keep its own density along its trajectory, not that $\rho$ be uniform across the domain; in the ocean, for example, salinity and temperature vary from layer to layer while each parcel's density remains nearly constant.</p>
 
-<p>Look again at the box figure. Away from the source core, every flow there satisfies (3.8), and every box shows zero net outflow. The cored source is the exception you can build in a computer but not in an incompressible fluid: a region where volume appears out of nowhere. In practice it stands for the end of a pipe that injects fluid, seen from far away.</p>
+<p>Look again at the box figure. Away from the source core, every flow there satisfies (3.8), and every box shows zero net outflow. The cored source is an idealised exception where volume is injected inside the core, representing the mouth of a supply pipe seen from far away.</p>
 
 <div data-quiz="q2"></div>
 
 <aside class="history" data-era="1752">The continuity condition came before the general equations of motion. Euler derived the condition for an incompressible fluid in a memoir read on 31 August 1752 but printed only in 1761. d'Alembert had derived the incompressibility condition in his entry for the Berlin Academy's 1749 prize on fluid resistance, published in French in 1752 as the <em>Essai d'une nouvelle théorie de la résistance des fluides</em>; Darrigol and Frisch suggest calling it "d'Alembert's condition". Euler's general continuity equation for a compressible fluid is in his memoir "Principes généraux du mouvement des fluides", presented in 1755 and printed in 1757 (Darrigol and Frisch 2008).</aside>
 
-<aside class="note" data-label="Why it matters numerically">In an incompressible solver, (3.8) is not an equation for $\rho$ at all. It is a constraint the velocity must satisfy at every instant, and enforcing it is the job of the pressure. That idea, and the cost of enforcing it, fill <a href="#/pressure/constraint">The pressure puzzle</a>.</aside>
+<aside class="note" data-label="Why it matters numerically">In an incompressible solver, (3.8) acts as an instantaneous kinematic constraint on the velocity field rather than an evolution equation for $\rho$, and pressure serves as the Lagrange multiplier that enforces it—the central topic of <a href="#/pressure/constraint">The pressure puzzle</a>.</aside>
 
 <h2 id="momentum">Momentum: forces on a box</h2>
 
-<p>For momentum the quantity per unit volume is $\rho\mathbf{u}$, a vector, and it is carried with flux $\rho\mathbf{u}(\mathbf{u}\cdot\mathbf{n})$ through a face. Unlike mass, momentum has sources: forces. Newton's second law, applied to a material volume and translated by (3.4), says that the momentum in a fixed box changes because momentum is carried through its walls and because forces act on what is inside.</p>
+<p>For momentum the quantity per unit volume is $\rho\mathbf{u}$, a vector, and it is carried with flux $\rho\mathbf{u}(\mathbf{u}\cdot\mathbf{n})$ through a face. Unlike mass, momentum can be created or destroyed inside the control volume by forces. Newton's second law, applied to a material volume and translated by (3.4), says that the momentum in a fixed box changes because momentum is carried through its walls and because forces act on what is inside.</p>
 
-<p>Forces on a piece of fluid come in two kinds. <em>Body forces</em> act on every bit of mass at a distance: gravity, or the apparent forces in a rotating frame. They add up to $\int_V \rho\,\mathbf{f}\,\mathrm{d}V$, with $\mathbf{f}$ the force per unit mass. <em>Surface forces</em> are exerted by the fluid outside the box on the fluid inside, through the walls. The force per unit area on a face is the <em>traction</em> $\mathbf{t}$. In a fluid at rest it is just the pressure, pushing straight in (<a href="#/continuum/pressure">What is a fluid?</a>). In a moving fluid it can also have a component along the face, a shear stress, and its size and direction depend on how the face is tilted.</p>
+<p>Forces on a piece of fluid come in two kinds. <em>Body forces</em> such as gravity or Coriolis and centrifugal accelerations act throughout the volume, contributing $\int_V \rho\,\mathbf{f}\,\mathrm{d}V$, where $\mathbf{f}$ is the force per unit mass. <em>Surface forces</em> are exerted by the fluid outside the box on the fluid inside, through the walls. The force per unit area on a face is the <em>traction</em> $\mathbf{t}$. In a fluid at rest it is just the pressure, pushing straight in (<a href="#/continuum/pressure">What is a fluid?</a>). In a moving fluid it can also have a component along the face, a shear stress, and its size and direction depend on how the face is tilted.</p>
 
 <p>Cauchy showed that this dependence is as simple as it could be. At each point there is a single matrix, the <dfn data-term="cauchy-stress">Cauchy stress tensor</dfn> $\boldsymbol{\sigma}$, which turns the normal of any face into the traction on it:</p>
 
 <div class="eq" id="eq-cauchy">$$\mathbf{t}(\mathbf{n}) = \boldsymbol{\sigma}\,\mathbf{n}, \qquad t_i = \sigma_{ij}\,n_j .$$<span class="eq-tag">(3.9)</span></div>
 
-<p>The entry $\sigma_{ij}$ is the $i$-component of force per unit area on a face whose normal points along $j$. The diagonal entries are normal stresses, the others shears. Balancing the turning moments on a small cube shows that $\boldsymbol{\sigma}$ is symmetric, so in three dimensions it has six independent entries, not nine.</p>
+<p>The entry $\sigma_{ij}$ is the $i$-component of force per unit area on a face whose normal points along $j$. The diagonal entries are normal stresses, the others shears. Balancing angular momentum on a small cube shows that $\boldsymbol{\sigma} = \boldsymbol{\sigma}^{\top}$, reducing its nine entries in three dimensions to six independent components.</p>
 
 <details class="deeper"><summary>Go deeper: Cauchy's tetrahedron</summary>
 <p>Take a tiny tetrahedron with three faces on the coordinate planes and a slanted fourth face of area $A$ with outward normal $\mathbf{n}$. The coordinate faces have areas $A n_1$, $A n_2$, $A n_3$ and outward normals $-\mathbf{e}_1$, $-\mathbf{e}_2$, $-\mathbf{e}_3$. If the tetrahedron has size $h$, the surface forces on it scale like $h^2$, while its mass times acceleration and the body force scale like $h^3$. Newton's law for the tetrahedron is</p>
@@ -132,19 +132,19 @@ export const chapter = {
 <p>The momentum flux has two parts: momentum carried by the flow, $\rho\,\mathbf{u}\otimes\mathbf{u}$, and momentum handed across a surface by stress, $-\boldsymbol{\sigma}$. Compressible-flow codes discretise this form, together with (3.6) and an energy equation, because it keeps all three totals exact. The final section shows what goes wrong when you don't.</p>
 </details>
 
-<p>The simplest rule is the one for a fluid at rest, $\boldsymbol{\sigma} = -p\,\mathbf{I}$: the same pressure on every face, pushing inward. Assume that it also holds in motion, so that the fluid has no internal friction at all. Since $\nabla\cdot(-p\mathbf{I}) = -\nabla p$, (3.10) becomes the <dfn data-term="euler-equations">Euler equations</dfn>:</p>
+<p>In an ideal (inviscid) fluid, the stress tensor retains its hydrostatic form $\boldsymbol{\sigma} = -p\,\mathbf{I}$ even when the fluid is in motion, so every surface experiences only a normal pressure push with no internal friction. Since $\nabla\cdot(-p\mathbf{I}) = -\nabla p$, substituting this into (3.10) yields the <dfn data-term="euler-equations">Euler equations</dfn>:</p>
 
 <div class="eq" id="eq-euler">$$\rho\,\frac{\mathrm{D}\mathbf{u}}{\mathrm{D}t} = -\nabla p + \rho\,\mathbf{f} .$$<span class="eq-tag">(3.11)</span></div>
 
 <aside class="who" data-person="leonhard-euler">Euler wrote the equations of motion of an ideal fluid, with continuity, in his 1755 memoir (printed 1757). He then said what was missing: "it is not the laws of Mechanics that we lack in order to pursue this research but only the Analysis, which has not yet been sufficiently developed for this purpose." Nearly three centuries later the analysis is still not finished, as the last section of this chapter explains.</aside>
 
-<p>Count equations and unknowns. For an incompressible fluid of uniform density the unknowns are the three velocity components and the pressure. The equations are three momentum components and the constraint (3.8). Four and four, so the system is closed. For a compressible gas, the density is a fifth unknown and (3.6) a fifth equation. The pressure then comes from an equation of state, which brings in the temperature and an energy equation. In every case, (3.10) on its own is not enough. Something has to say how stress depends on the motion. That is a <em>constitutive law</em>, and it is a statement about the material, not a conservation law.</p>
+<p>For an incompressible fluid of uniform density, the three momentum equations and the divergence constraint (3.8) form a closed system of four equations for the three velocity components and the pressure. For a compressible gas, the density is a fifth unknown governed by (3.6), and pressure is linked to density and temperature through a thermodynamic equation of state together with an energy conservation equation. In every case, closing Cauchy's equation (3.10) requires a <em>constitutive law</em> that specifies the stress tensor $\boldsymbol{\sigma}$ in terms of the flow variables, characterising the material properties of the fluid.</p>
 
 <aside class="who" data-person="augustin-louis-cauchy">Cauchy announced the idea of stress in 1822 and gave the full treatment, with the tetrahedron argument, in 1827. He described how it came to him: "It came into my mind that these two kinds could be reduced to one, still called tension or pressure, of the same nature as the hydrodynamic pressure exerted by a fluid against the surface of a solid. Yet the new pressure should not be perpendicular upon the faces which undergo it, nor be the same in all directions at a given point."</aside>
 
 <h2 id="navier-stokes">Viscosity and the Navier–Stokes equations</h2>
 
-<p>Real fluids resist being sheared. A layer sliding over another drags it along, at a rate set by the viscosity (<a href="#/continuum/viscosity">What is a fluid?</a>). Friction depends on how fast neighbouring parcels move relative to each other. It does not depend on the velocity itself, because a uniform translation or rotation deforms nothing. The measure of deformation is the <dfn data-term="strain-rate">strain-rate</dfn> tensor $\mathbf{S} = \tfrac{1}{2}(\nabla\mathbf{u} + \nabla\mathbf{u}^{\top})$ of the <a href="#/viewpoints/deformation">previous chapter</a>.</p>
+<p>Real fluids resist being sheared. A layer sliding over another drags it along, at a rate set by the viscosity (<a href="#/continuum/viscosity">What is a fluid?</a>). Because uniform translation and rigid rotation produce no relative deformation, internal friction depends only on how rapidly neighbouring parcels deform relative to one another, measured by the <dfn data-term="strain-rate">strain-rate</dfn> tensor $\mathbf{S} = \tfrac{1}{2}(\nabla\mathbf{u} + \nabla\mathbf{u}^{\top})$ of the <a href="#/viewpoints/deformation">previous chapter</a>.</p>
 
 <p>A <dfn data-term="newtonian-fluid">Newtonian fluid</dfn> is one whose extra stress is proportional to $\mathbf{S}$. If the fluid has no preferred direction, the most general linear law has two constants:</p>
 
@@ -154,7 +154,7 @@ export const chapter = {
 
 <aside class="who" data-person="simeon-denis-poisson">Poisson's memoir on elastic solids and viscous fluids (read 12 October 1829, printed 1831) kept two independent viscous constants, the pair $\mu$ and $\lambda$ of (3.12). Stokes's hypothesis cut them to one. Poisson's name returns with his 1813 equation, $\nabla^2 V = f$ (a potential driven by a source), which every incompressible solver meets as the pressure Poisson equation.</aside>
 
-<p>Put (3.12) into Cauchy's equation (3.10). With $\nabla\cdot\mathbf{u} = 0$ and constant $\mu$, the divergence of $2\mu\mathbf{S}$ is $\mu\nabla^2\mathbf{u} + \mu\nabla(\nabla\cdot\mathbf{u}) = \mu\nabla^2\mathbf{u}$. Divide by $\rho$ and write $\nu = \mu/\rho$ for the <dfn data-term="kinematic-viscosity">kinematic viscosity</dfn>. The result is the incompressible <dfn data-term="navier-stokes">Navier–Stokes equations</dfn>:</p>
+<p>Substituting (3.12) into Cauchy's equation (3.10) for an incompressible flow ($\nabla\cdot\mathbf{u} = 0$) with constant viscosity $\mu$ simplifies the viscous force $\nabla\cdot(2\mu\mathbf{S}) = \mu\nabla^2\mathbf{u} + \mu\nabla(\nabla\cdot\mathbf{u})$ to $\mu\nabla^2\mathbf{u}$. Dividing by $\rho$ and writing $\nu = \mu/\rho$ for the <dfn data-term="kinematic-viscosity">kinematic viscosity</dfn> yields the incompressible <dfn data-term="navier-stokes">Navier–Stokes equations</dfn>:</p>
 
 <div class="eq" id="eq-navier-stokes">$$\class{t1}{\frac{\partial \mathbf{u}}{\partial t}} + \class{t2}{(\mathbf{u}\cdot\nabla)\,\mathbf{u}} = \class{t3}{-\frac{1}{\rho}\nabla p} + \class{t4}{\nu\,\nabla^2\mathbf{u}} + \class{t5}{\mathbf{f}}, \qquad \nabla\cdot\mathbf{u} = 0 .$$<span class="eq-tag">(3.13)</span></div>
 
@@ -173,21 +173,21 @@ export const chapter = {
 
 <p>A solution of (3.13) is a velocity field for which these five terms balance at every point and every instant. A few flows are simple enough to write down exactly. In the figure, pick one and drag the probe. The bars show each term at the probe, the two sides of the equation and their difference.</p>
 
-<figure data-widget="conservation-budget" data-preset="taylor-green" class="wide"><figcaption>The terms of (3.13), per unit mass, at the probe, for exact solutions of the Navier–Stokes equations. Velocities, their derivatives and the closed-form pressure come from the shared flow kernels; nothing here is simulated, so the residual is only round-off and finite-difference truncation: a few millionths of the largest term at most.</figcaption></figure>
+<figure data-widget="conservation-budget" data-preset="taylor-green" class="wide"><figcaption>The terms of (3.13), per unit mass, at the probe, for exact solutions of the Navier–Stokes equations. Velocities, their derivatives and the closed-form pressure come from the shared flow kernels; nothing here is simulated, so the residual reflects only floating-point round-off and finite-difference truncation (at most a few millionths of the largest term).</figcaption></figure>
 
 <div class="try"><ol>
 <li>In the decaying cells (Taylor–Green), drag the probe around. The local term always matches the viscous term, and the convective term always matches the pressure term. The flow fades, and friction is what fades it.</li>
-<li>Switch to the pressure-driven channel. Nothing accelerates; the pressure push is balanced by viscous drag at every height. Now try the gravity-driven channel: the same velocity, with the weight $\mathbf{f}$ doing the pressure's job.</li>
-<li>Turn off the viscous term. The channel and the decaying cells go out of balance: they need viscosity. The potential flow past the cylinder and the solid-body rotation stay balanced. For them $\nabla^2\mathbf{u} = 0$, so they solve Euler's equations too.</li>
+<li>Switch to the pressure-driven channel. Nothing accelerates; the pressure push is balanced by viscous drag at every height. Now try the gravity-driven channel, which produces the same parabolic velocity profile with the body force $\mathbf{f}$ replacing the pressure gradient.</li>
+<li>Turn off the viscous term. The channel and the decaying cells go out of balance because both rely on viscous forces. The potential flow past the cylinder and the solid-body rotation stay balanced. For them $\nabla^2\mathbf{u} = 0$, so they solve Euler's equations too.</li>
 <li>In the spreading vortex (Lamb–Oseen), compare "along $u$" with "across $u$". Along the flow, the slowing is set by viscosity. Across it, the pressure gradient supplies the centripetal acceleration that bends parcels round in circles.</li>
 <li>Raise $\nu$ in the channel. The viscous term grows, and the pressure gradient needed to drive the same flow grows with it.</li>
 </ol></div>
 
 <div data-quiz="q3"></div>
 
-<p>One more ingredient completes the problem: what happens at a solid wall. Fluid cannot pass through a wall, so $\mathbf{u}\cdot\mathbf{n}$ equals the wall's normal velocity. The <em>no-slip condition</em> asks for more: the fluid touching the wall moves with it, tangential component included. It took decades to settle, and for liquids and gases at ordinary densities experiment now confirms it. It fails in rarefied gases, where the <dfn data-term="mean-free-path">mean free path</dfn> is not small compared with the flow (<a href="#/continuum/continuum">What is a fluid?</a>), and slip conditions return.</p>
+<p>Completing the mathematical problem requires boundary conditions at solid walls. Impermeability requires the normal velocity $\mathbf{u}\cdot\mathbf{n}$ to match that of the wall, while the <em>no-slip condition</em> requires the tangential velocity of the fluid at the wall to match the wall's tangential velocity as well. After decades of nineteenth-century debate, experiments confirmed no-slip for liquids and gases at ordinary densities; it breaks down in rarefied gases when the <dfn data-term="mean-free-path">mean free path</dfn> is comparable to the flow scale (<a href="#/continuum/continuum">What is a fluid?</a>), where wall-slip models are needed.</p>
 
-<aside class="history" data-era="1822">Darrigol (2002) counts five separate derivations of these equations. Navier's came first, in a memoir read to the Paris Academy on 18 March 1822 and printed in 1827. He started from forces between molecules. Cauchy followed in 1823 and Poisson in 1829 (printed 1831). Saint-Venant presented a derivation in 1834 that needed no assumption about molecular forces, and printed a summary of it in 1843. Stokes's continuum derivation, read at Cambridge on 14 April 1845 and printed in the Society's <em>Transactions</em> a few years later, is the one textbooks follow. The double name "Navier–Stokes" came much later, apparently in the twentieth century; who first used it is not known.</aside>
+<aside class="history" data-era="1822">Darrigol (2002) counts five separate derivations of these equations. Navier's came first, in a memoir read to the Paris Academy on 18 March 1822 and printed in 1827. He started from forces between molecules. Cauchy followed in 1823 and Poisson in 1829 (printed 1831). Saint-Venant presented a derivation in 1834 that needed no assumption about molecular forces, and printed a summary of it in 1843. Stokes's continuum derivation, read at Cambridge on 14 April 1845 and printed in the Society's <em>Transactions</em> a few years later, is the one textbooks follow. The compound name "Navier–Stokes" became standard in the twentieth century.</aside>
 
 <aside class="who" data-person="adhemar-barre-de-saint-venant">Saint-Venant obtained the viscous stresses from one assumption, that the tangential stress on each face points along the direction of sliding, with nothing assumed about molecules (memoir presented 14 April 1834, printed note 1843). His note writes stresses with the double subscripts $p_{xy}$ that are still in use.</aside>
 
@@ -195,11 +195,11 @@ export const chapter = {
 
 <aside class="who" data-person="george-gabriel-stokes">Stokes derived the equations from the rate of deformation alone, introduced the notation $\mathrm{D}/\mathrm{D}t$, and tested the no-slip condition against pipe data. It failed for the large pipes he had measurements for: "I found that the formulae did not at all agree with experiment." Those flows were turbulent, which nobody could yet recognise. The support for no-slip came from Poiseuille's capillary-tube measurements (1840) and from Stokes's own pendulum theory (1850), which matched Baily's pendulum experiments.</aside>
 
-<p>For ordinary liquids and gases, from water in pipes to air over wings, the Navier–Stokes equations agree with careful experiments wherever the two can be compared. The difficulty is not whether they are right. It is how to solve them, and the rest of this course is about that.</p>
+<p>For ordinary liquids and gases, from water in pipes to air over wings, the Navier–Stokes equations agree closely with experiment wherever the two can be compared. The challenge lies in solving them, which is the subject of the rest of this course.</p>
 
 <h2 id="paradox">d'Alembert's paradox</h2>
 
-<p>Before viscosity entered the equations, there was a scandal. Take the Euler equations, a steady uniform stream and a body in it, and suppose the flow is irrotational, as it is when it starts from rest. Then the force on the body along the stream, the drag, comes out exactly zero. This is <dfn data-term="dalembert-paradox">d'Alembert's paradox</dfn>, and every swimmer, sailor and archer knew the result was wrong.</p>
+<p>Before viscosity entered the equations of motion, inviscid theory faced a major contradiction. When a body is placed in a steady, uniform stream of inviscid fluid whose motion is irrotational (as when started from rest), the Euler equations predict that the net force on the body in the direction of the stream—the drag—is identically zero. This result is <dfn data-term="dalembert-paradox">d'Alembert's paradox</dfn>, contradicting everyday experience with any solid moving through water or air.</p>
 
 <p>The circular cylinder shows how it happens. The potential flow around it, which you watched in the previous chapter, has surface speed $2U\sin\theta$, where $\theta$ is measured from the rear. Bernoulli's equation turns speed into pressure, and the <em>pressure coefficient</em> $C_p = (p - p_\infty)/(\tfrac{1}{2}\rho U^2)$ on the surface is</p>
 
@@ -215,10 +215,10 @@ export const chapter = {
 <li>With no circulation, the arrows at the front and back match, and so do those at the top and bottom. The drag readout is zero to about $10^{-16}$.</li>
 <li>Drag the circulation negative (clockwise). The flow over the top speeds up and the flow underneath slows down, so the suction on top wins: lift appears, equal to $-\rho U\Gamma$. The drag stays zero.</li>
 <li>Watch the two stagnation points slide down the surface as $|\Gamma|$ grows. At $|\Gamma| = 4\pi R U \approx 6.28$ they meet at the bottom; beyond it, one stagnation point floats off the body and a ring of fluid circles the cylinder.</li>
-<li>Compare the solid curve with the dashed one: circulation breaks the top–bottom symmetry but keeps the front–back symmetry. That is why lift appears and drag does not.</li>
+<li>Compare the solid curve with the dashed one to see how circulation breaks the top–bottom symmetry while preserving the fore–aft symmetry, producing lift without drag.</li>
 </ol></div>
 
-<p>The lift result is the <em>Kutta–Joukowski theorem</em>: in steady two-dimensional potential flow, a body with circulation $\Gamma$ (positive anticlockwise) feels a force $\rho U |\Gamma|$ per unit span, at right angles to the stream. Kutta worked out a special case in 1902 and Zhukovsky gave the general result in 1906. It is the basis of the theory of wings, and it has no drag in it: steady two-dimensional potential flow past a body never gives drag.</p>
+<p>The lift result is the <em>Kutta–Joukowski theorem</em>: in steady two-dimensional potential flow, a body with circulation $\Gamma$ (positive anticlockwise) experiences a force of magnitude $\rho U |\Gamma|$ per unit span perpendicular to the oncoming stream, while the drag in steady two-dimensional potential flow remains zero. Kutta worked out a special case in 1902 and Zhukovsky proved the general theorem in 1906, establishing the circulation theory of aerofoil lift.</p>
 
 <aside class="who" data-person="nikolai-zhukovsky">Zhukovsky (also written Joukowski) stated the general lift theorem in 1906 and checked it with experiments on rotating disks at Kuchino, near Moscow. Kutta pointed out that the formula was already contained in his 1902 work on a particular profile, and the double name stuck.</aside>
 
@@ -234,7 +234,7 @@ export const chapter = {
 
 <aside class="who" data-person="ludwig-prandtl">Prandtl presented the idea at the International Congress of Mathematicians in Heidelberg in August 1904, in a paper of eight printed pages (1905). His working term was "Übergangsschicht", transition layer: "In der schmalen Übergangsschicht ergeben dann die schroffen Geschwindigkeitsunterschiede trotz der kleinen Reibungskonstanten merkliche Wirkungen." In plain translation: in the narrow transition layer the abrupt differences in velocity then produce noticeable effects, despite the small friction constant.</aside>
 
-<aside class="pitfall">A numerical solution of the Euler equations for flow past a bluff body often <em>does</em> show a wake and drag. The equations have not changed. The scheme's numerical dissipation (<a href="#/advection/diffusion-dispersion">Advection</a>) acts as an uncontrolled viscosity that lets the flow separate. Such a drag depends on the grid and the scheme, not on the fluid, so treat it as an error, not a prediction.</aside>
+<aside class="pitfall">A numerical solution of the Euler equations for flow past a bluff body often <em>does</em> show a wake and drag. The equations have not changed. The scheme's numerical dissipation (<a href="#/advection/diffusion-dispersion">Advection</a>) acts as an uncontrolled viscosity that lets the flow separate. Because this apparent drag is an artefact of the grid resolution and discretisation scheme rather than physical viscosity, it cannot be used as a drag prediction.</aside>
 
 <h2 id="finite-volume">Finite volumes: bookkeeping on a grid</h2>
 
@@ -242,19 +242,19 @@ export const chapter = {
 
 <div class="eq" id="eq-fv">$$q_j^{n+1} = q_j^{n} - \frac{\Delta t}{\Delta x}\left(F_{j+1/2} - F_{j-1/2}\right) .$$<span class="eq-tag">(3.16)</span></div>
 
-<p>That is the <dfn data-term="finite-volume">finite-volume method</dfn>. The approximation comes only in choosing $F_{j+1/2}$ from the cell averages near the face: the chapters on <a href="#/advection/upwind">advection</a> and <a href="#/shocks/limiters">shocks</a> are about how to choose it. Whatever the choice, one rule makes the method conservative: <em>each face has one flux, used by both neighbours</em>. What cell $j$ sends through face $j+\tfrac{1}{2}$ is exactly what cell $j+1$ receives. Sum (3.16) over all cells and the inner fluxes cancel in pairs, just as the inner faces did in the divergence theorem:</p>
+<p>This update is the <dfn data-term="finite-volume">finite-volume method</dfn>. All numerical approximation enters in how the numerical flux $F_{j+1/2}$ is reconstructed from neighbouring cell averages, as developed in the chapters on <a href="#/advection/upwind">advection</a> and <a href="#/shocks/limiters">shocks</a>. Regardless of that reconstruction, the method is conservative whenever <em>each face has a single flux shared by both adjacent cells</em>, so that what leaves cell $j$ across face $j+\tfrac{1}{2}$ equals what enters cell $j+1$. Summing (3.16) over all cells then cancels the interior fluxes in pairs, just as interior faces cancelled in the divergence theorem:</p>
 
 <div class="eq" id="eq-telescope">$$\sum_j q_j^{n+1}\,\Delta x = \sum_j q_j^{n}\,\Delta x - \Delta t\left(F_{\text{right end}} - F_{\text{left end}}\right) .$$<span class="eq-tag">(3.17)</span></div>
 
 <p>The sum telescopes. Only the boundary fluxes can change the total. On a periodic domain nothing changes at all, apart from round-off, at any resolution and for any flux formula. An update written as (3.16) is said to be in <dfn data-term="conservation-form">conservation form</dfn>.</p>
 
-<p>Now the trap. Take cars on a ring road, with density $q$ (cars per kilometre) and a speed limit $a(x)$ that drops through a zone of road works. The flux is $a q$ (cars per hour), and the number of cars obeys</p>
+<p>To see why conservation form matters when the wave speed varies in space, consider traffic of density $q(x, t)$ (cars per kilometre) on a ring road where the speed limit $a(x)$ drops through a roadworks zone. Because the flux is $a q$ (cars per hour), conservation of cars reads</p>
 <p>$$\frac{\partial q}{\partial t} + \frac{\partial (a q)}{\partial x} = 0 .$$</p>
-<p>For smooth $q$, the product rule gives an equivalent equation, $\partial_t q + a\,\partial_x q + a'\,q = 0$. Discretise that one with the same upwind difference and an exact $a'$:</p>
+<p>For smooth solutions, expanding the derivative by the product rule gives the analytically equivalent form $\partial_t q + a\,\partial_x q + a'\,q = 0$. Discretising this expanded equation with an upwind difference and the exact derivative $a'$ gives</p>
 
 <div class="eq" id="eq-product">$$q_j^{n+1} = q_j^{n} - \Delta t\left(a_j\,\frac{q_j^{n} - q_{j-1}^{n}}{\Delta x} + a'_j\,q_j^{n}\right) .$$<span class="eq-tag">(3.18)</span></div>
 
-<p>It looks just as good. It is consistent and first-order accurate, like the flux form. But it is not a flux difference. Cell $j$ reads it as taking in $a_j q_{j-1}\Delta t$ through its left face. Cell $j-1$, using its own speed $a_{j-1}$, believes it sent out $(a_{j-1} + a'_{j-1}\Delta x)\,q_{j-1}\Delta t$ through the same face. The two numbers differ by an amount of order $\Delta x^2\,a''$, and the difference is cars made or destroyed at that face. Nothing telescopes, and the total drifts.</p>
+<p>Although (3.18) is consistent and first-order accurate like the flux form, it cannot be written as a difference of single-valued face fluxes. At face $j-\tfrac{1}{2}$, cell $j$ adds an incoming amount $a_j q_{j-1}\Delta t$, whereas cell $j-1$ subtracts $(a_{j-1} + a'_{j-1}\Delta x)\,q_{j-1}\Delta t$. Because the two cells evaluate the transport across their shared face using different local coefficients, the two amounts differ by $\mathcal{O}(\Delta x^2 a'' q)$, creating or destroying cars at the interface so that the sum no longer telescopes and the total number of cars drifts.</p>
 
 <div data-quiz="q5"></div>
 
@@ -263,28 +263,28 @@ export const chapter = {
 <div class="try"><ol>
 <li>Press Drive. The block of cars bunches up in the slow zone and spreads out again after it. In the top row the total stays fixed to about $10^{-16}$, the level of round-off. In the bottom row the marks show cars appearing at the faces where the speed limit bends, and the total climbs.</li>
 <li>Tap a face in the slow zone, then press Step. The readouts show what the left cell sends and what the right cell receives through that face in the bottom row. They differ. In the top row they are the same number by construction.</li>
-<li>Compare 50, 100 and 200 cells. The leak per pass roughly halves each time: it is a first-order error. The flux form stays at round-off throughout.</li>
+<li>Compare 50, 100 and 200 cells. The leak per pass roughly halves each time because the conservation error is first order in $\Delta x$, while the flux form remains at round-off throughout.</li>
 <li>Choose the constant-speed road. Now $a' = 0$, and both updates are the same arithmetic, so both conserve.</li>
 <li>Switch the bottom row to the advective form. It drops the $a'q$ term entirely and solves a different equation, one that carries values rather than amounts. Its total collapses while the cars are in the slow zone, because it never lets them bunch up.</li>
 </ol></div>
 
-<p>On this road, with 50 cells, the product-rule form gains about 27% of the cars in one pass round the ring; with 100 cells, about 12%; with 200, about 6%. It converges, slowly, to the right answer. The flux form is out by about $10^{-16}$ at every resolution. That does not make it accurate: its profile is visibly smeared, by the <dfn data-term="numerical-diffusion">numerical diffusion</dfn> of upwinding (<a href="#/advection/diffusion-dispersion">Advection</a>). Conservation and accuracy are separate properties. Conservation is the one you can have exactly, for free, by writing the update the right way.</p>
+<p>On this road, the product-rule discretisation (3.18) gains about 27% of the total cars in one circuit on a 50-cell grid, 12% on 100 cells, and 6% on 200 cells, converging to the exact total only at first order. The flux form (3.16) conserves the total to machine precision ($\approx 10^{-16}$) at every resolution, even though its profile is visibly smeared by the <dfn data-term="numerical-diffusion">numerical diffusion</dfn> of first-order upwinding (<a href="#/advection/diffusion-dispersion">Advection</a>). Exact conservation and pointwise accuracy are distinct properties; writing the update in flux-difference form guarantees exact conservation at any grid resolution without extra computational work.</p>
 
 <details class="deeper"><summary>Go deeper: how fast the product rule leaks</summary>
 <p>Sum (3.18) over a periodic grid. Summing by parts, $\sum_j a_j(q_j - q_{j-1}) = \sum_j q_j\,(a_j - a_{j+1})$, so the total $M = \sum_j q_j\Delta x$ changes by</p>
 <p>$$\frac{M^{n+1} - M^{n}}{\Delta t} = \Delta x\sum_j q_j\left(\frac{a_{j+1} - a_j}{\Delta x} - a'_j\right) = \frac{\Delta x}{2}\sum_j q_j\,a''_j\,\Delta x + \mathcal{O}(\Delta x^2) .$$</p>
-<p>The leak rate is about $\tfrac{1}{2}\Delta x\int q\,a''\,\mathrm{d}x$: first order in $\Delta x$, and largest where the speed limit bends sharply. In the flux form the same sum is exactly zero, because each $F_{j+1/2}$ appears once with each sign.</p>
+<p>The leak rate is approximately $\tfrac{1}{2}\Delta x\int q\,a''\,\mathrm{d}x$, which is first order in $\Delta x$ and largest where $a(x)$ has strong curvature. In the flux form the corresponding sum is identically zero because each interior flux $F_{j+1/2}$ appears once with a positive sign and once with a negative sign.</p>
 </details>
 
-<aside class="pitfall">A non-conservative update leaks mass in smooth flow, as here, and the leak shrinks as the grid is refined. At a shock it is worse. The <dfn data-term="rankine-hugoniot">jump conditions</dfn> that fix a shock's speed come from the integral form (3.1) (<a href="#/shocks/rankine-hugoniot">Shocks</a>). A scheme that does not conserve can converge, as the grid is refined, to a shock that moves at the wrong speed (Hou and LeFloch 1994). The guarantee runs the other way only for conservation form: Lax and Wendroff proved in 1960 that if a consistent scheme in conservation form converges, it converges to a <dfn data-term="weak-solution">weak solution</dfn> of the conservation law, so its shocks satisfy the jump conditions. See <a href="#/pathologies">the gallery</a>.</aside>
+<aside class="pitfall">A non-conservative update leaks mass in smooth flow, as here, and the leak shrinks as the grid is refined. At a shock it is worse. The <dfn data-term="rankine-hugoniot">jump conditions</dfn> that fix a shock's speed come from the integral form (3.1) (<a href="#/shocks/rankine-hugoniot">Shocks</a>). A scheme that does not conserve can converge, as the grid is refined, to a shock that moves at the wrong speed (Hou and LeFloch 1994). Conversely, Lax and Wendroff proved in 1960 that when a consistent scheme in conservation form converges as the grid is refined, its limit is a <dfn data-term="weak-solution">weak solution</dfn> of the conservation law whose shocks satisfy the Rankine–Hugoniot jump conditions. See <a href="#/pathologies">the gallery</a>.</aside>
 
 <p>In two and three dimensions the idea is the same. The cells are boxes, or any polyhedra, and each face carries one flux, shared by the two cells it separates. The divergence theorem (3.2) is then exact cell by cell, and the totals of mass, momentum and energy are conserved to round-off. This is why finite volumes underlie most general-purpose engineering CFD codes (Versteeg and Malalasekera 2007), and why the staggered grids of <a href="#/pressure/mac">The pressure puzzle</a> place velocities on cell faces.</p>
 
 <h2 id="millennium">An open question</h2>
 
-<p>For all their success, the Navier–Stokes equations hold a famous unsolved problem. In 2000 the Clay Mathematics Institute listed it among seven Millennium Prize Problems, announced on 24 May 2000 at the Collège de France in Paris, each with a prize of one million US dollars. The official description, by Charles Fefferman, concerns incompressible flow in all of three-dimensional space or in a periodic box. A solver must prove one of two things. Either, with no forcing, every smooth initial velocity field (decaying fast enough at infinity, in the unbounded case) has a smooth, finite-energy solution for all time. Or there is a smooth initial field, with a smooth forcing allowed, for which no such solution exists: the solution breaks down. In two dimensions the answer has long been known: solutions stay smooth (Ladyzhenskaya proved this for bounded domains in 1958–59). In three dimensions smoothness is known only for small initial data or for a short time. Leray showed in 1934 that weak solutions, which need not be smooth, exist for all time. Whether they are smooth, or even unique, is open. Fefferman also warns against settling the question by computer: "Many numerical computations appear to exhibit blowup for solutions of the Euler equations, but the extreme numerical instability of the equations makes it very hard to draw reliable conclusions."</p>
+<p>For all their success, the Navier–Stokes equations hold a famous unsolved problem. In 2000 the Clay Mathematics Institute listed it among seven Millennium Prize Problems, announced on 24 May 2000 at the Collège de France in Paris, each with a prize of one million US dollars. The official description, by Charles Fefferman, concerns incompressible flow in all of three-dimensional space or in a periodic box. A solver must prove one of two things. Either, with no forcing, every smooth initial velocity field (decaying fast enough at infinity, in the unbounded case) has a smooth, finite-energy solution for all time. Or there exists a smooth initial field (with smooth forcing allowed) for which no such global smooth solution exists because the solution develops a finite-time singularity. In two dimensions, smooth initial data are known to produce smooth solutions for all time, as Ladyzhenskaya proved for bounded domains in 1958–59. In three dimensions smoothness is known only for small initial data or for a short time. Leray showed in 1934 that weak solutions, which need not be smooth, exist for all time. Whether they are smooth, or even unique, is open. Fefferman also warns against settling the question by computer: "Many numerical computations appear to exhibit blowup for solutions of the Euler equations, but the extreme numerical instability of the equations makes it very hard to draw reliable conclusions."</p>
 
-<p>The prize is not about solving the equations numerically, and it is not about explaining turbulence. It asks whether the equations themselves always have well-behaved solutions. Progress continues around its edges. Buckmaster and Vicol (posted 2017, published 2019) showed that some weak solutions are not unique. Theirs are not Leray's weak solutions and they are far from smooth, so the Clay problem stands; as they write, "the question of uniqueness of Leray-Hopf weak solutions for the 3D Navier-Stokes equations remains however open." Engineers do not wait for the answer. They trust the equations because computed solutions, checked as described in <a href="#/trust/validation">Can you trust the numbers?</a>, agree with experiment.</p>
+<p>The Millennium problem asks a question of mathematical regularity—whether the three-dimensional continuum equations themselves are guaranteed to have smooth, unique solutions for all time—rather than how to approximate them numerically or model turbulent statistics. Progress continues around its edges. Buckmaster and Vicol (posted 2017, published 2019) showed that some weak solutions are not unique. Theirs are not Leray's weak solutions and they are far from smooth, so the Clay problem stands; as they write, "the question of uniqueness of Leray-Hopf weak solutions for the 3D Navier-Stokes equations remains however open." Engineers do not wait for the answer. They trust the equations because computed solutions, checked as described in <a href="#/trust/validation">Can you trust the numbers?</a>, agree with experiment.</p>
 
 <aside class="who" data-person="jean-leray">Leray built his weak solutions in 1934 by smoothing the velocity that does the carrying, solving the smoothed problem, and passing to a limit. He called them "turbulent solutions"; whether they have anything to do with physical turbulence is still debated. The projection onto divergence-free fields used in <a href="#/pressure/hodge">The pressure puzzle</a> is often named after him.</aside>
 
@@ -326,13 +326,13 @@ export const chapter = {
       type: 'predict',
       q: 'The source in the figure below makes fluid at a volume rate $m = 2\\pi$ per unit depth, spread evenly over its small core. You place the box so that its left edge runs through the centre of the core and the rest of the core is inside. What will the net outflow read?',
       choices: [
-        'Zero: whatever flows in through one face flows out through another.',
-        'About $m/2 = 3.14$: the box holds half the core, so half of what is made there leaves through its faces.',
-        'The full $m = 6.28$: a box that touches the source collects all of it.',
-        'It depends on the size of the box: a bigger box catches more of the outflow.',
+        'Zero, because whatever flows in through one face flows out through another.',
+        'About $m/2 = 3.14$, since the box encloses half the core and half of the volume created inside leaves through its faces.',
+        'The full $m = 6.28$, because any box that intersects the source collects all of its output.',
+        'It depends on the size of the box, since a larger box captures more of the outflow.',
       ],
       answer: 1,
-      explain: 'By the divergence theorem the net outflow equals the integral of $\\nabla\\cdot\\mathbf{u}$ over the box, which is $m$ times the fraction of the core inside: one half. Fluid made in the other half of the core enters through the left face and leaves again, so it adds nothing. The size of the box does not matter once it holds that half of the core; only what is made inside counts.',
+      explain: 'By the divergence theorem, the net outflow equals the integral of $\\nabla\\cdot\\mathbf{u}$ over the box, which is $m$ times the fraction of the core enclosed ($1/2$). Fluid generated in the outer half of the core enters through the left face and exits through the remaining faces with zero net contribution, so the box size does not affect the result once it encloses half the core.',
     },
     q2: {
       type: 'mcq',
@@ -344,7 +344,7 @@ export const chapter = {
         'The pressure is the same everywhere.',
       ],
       answer: 1,
-      explain: 'By (3.7), $\\nabla\\cdot\\mathbf{u}$ is the rate at which a parcel’s volume grows. Zero divergence means no parcel changes its volume or its density, $\\mathrm{D}\\rho/\\mathrm{D}t = 0$. Different parcels can still have different densities: the ocean is incompressible to high accuracy, yet its density varies with salt and temperature. Speed and pressure can vary freely; in fact pressure differences are what keep the flow divergence-free.',
+      explain: 'By (3.7), $\\nabla\\cdot\\mathbf{u}$ is the relative rate of volume expansion of a fluid parcel, so $\\nabla\\cdot\\mathbf{u} = 0$ means that every parcel preserves its volume and density ($\\mathrm{D}\\rho/\\mathrm{D}t = 0$). Different parcels may still have different densities, as in a salt- or temperature-stratified ocean, and both speed and pressure vary in space.',
     },
     q3: {
       type: 'mcq',
@@ -356,7 +356,7 @@ export const chapter = {
         'The viscous term $\\nu\\nabla^2\\mathbf{u}$.',
       ],
       answer: 1,
-      explain: 'The convective term multiplies the velocity by its own gradient: double $\\mathbf{u}$ and it quadruples. That self-interaction is behind turbulence, and behind shocks in compressible flow. The pressure term looks linear, but in incompressible flow the pressure is fixed by the velocity through a Poisson equation whose source is quadratic in $\\mathbf{u}$ (see The pressure puzzle). The viscous term is linear: it is a diffusion operator.',
+      explain: 'The convective term $(\\mathbf{u}\\cdot\\nabla)\\mathbf{u}$ multiplies the velocity by its own spatial gradient, so doubling $\\mathbf{u}$ quadruples the term. This quadratic nonlinearity drives shock steepening and turbulence, and in incompressible flow it also enters the source term of the pressure Poisson equation (see The pressure puzzle), whereas the viscous diffusion term $\\nu\\nabla^2\\mathbf{u}$ is linear.',
     },
     q4: {
       type: 'predict',
@@ -364,20 +364,20 @@ export const chapter = {
       choices: [
         'Lift appears, and drag appears with it, as for a spinning ball in air.',
         'Lift appears, at right angles to the stream; the drag stays exactly zero.',
-        'Nothing: potential flow gives zero force of every kind.',
+        'Nothing, because potential flow gives zero force of every kind.',
         'Drag appears, because the spinning surface rubs on the fluid; there is no lift.',
       ],
       answer: 1,
-      explain: 'Circulation speeds up the flow on one side and slows it on the other, so the pressure is no longer symmetric top to bottom: lift $-\\rho U\\Gamma$ per unit span, the Kutta–Joukowski theorem. It is still symmetric front to back, so the drag remains zero. There is no rubbing in an inviscid fluid. A real spinning ball has drag because of its boundary layer and wake, which potential flow leaves out.',
+      explain: 'Circulation speeds up the flow on one side and slows it on the other, breaking the top–bottom pressure symmetry and producing a lift force $-\\rho U\\Gamma$ per unit span by the Kutta–Joukowski theorem. Fore–aft symmetry is preserved, so the pressure drag remains zero; in a real fluid, drag arises from viscous shear and boundary-layer separation.',
     },
     q5: {
       type: 'predict',
       q: 'With 50 cells on the road with the slow zone, the product-rule form gains about 27% of the cars in one pass round the ring. Predict what happens with 100 cells.',
       choices: [
-        'Still about 27%: the error is in the formula, so refining cannot help.',
-        'About half as much, near 12%: the leak at each face shrinks with $\\Delta x$, so it is a first-order error.',
-        'About a quarter, near 7%: upwinding is second order.',
-        'It vanishes: any refinement fixes a leak like this.',
+        'Still about 27%, because the error is in the formula and refining cannot help.',
+        'About half as much, near 12%, because the leak at each face shrinks with $\\Delta x$ as a first-order error.',
+        'About a quarter, near 7%, because upwinding is second order.',
+        'It vanishes, since any refinement eliminates a conservation leak.',
       ],
       answer: 1,
       explain: 'The measured leak is 26.6% with 50 cells, 12.2% with 100 and 5.9% with 200. The leak rate is about $\\tfrac{1}{2}\\Delta x\\int q\\,a^{\\prime\\prime}\\,\\mathrm{d}x$, first order in $\\Delta x$. So the product-rule form does converge for smooth flow, slowly. The flux form is exact to round-off at every resolution, because each face has one flux. At a shock the difference is sharper: a non-conservative scheme can converge to a shock at the wrong speed.',
@@ -386,7 +386,7 @@ export const chapter = {
   glossary: {
     'control-volume': {
       term: 'Control volume',
-      def: 'A region of space, usually fixed, used to keep the books of a conserved quantity: the amount inside changes only by fluxes through its surface and sources within.',
+      def: 'A region of space, usually fixed, used to formulate an integral conservation balance, in which the total inside changes only through surface fluxes and internal sources.',
       section: 'control-volumes',
     },
     flux: {

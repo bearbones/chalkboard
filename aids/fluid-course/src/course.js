@@ -52,7 +52,7 @@ export const PARTS = [
     numeral: 'IV',
     title: 'Part IV · Other roads, and trust',
     name: 'Other roads, and trust',
-    blurb: 'Lattice and particle methods, turbulence and what it costs, and how to tell whether a simulation is right.',
+    blurb: 'Lattice and particle methods, turbulence across scales, and how to tell whether a simulation is right.',
     chapters: [latticeParticles, turbulence, trust],
   },
 ];

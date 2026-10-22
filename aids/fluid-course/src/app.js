@@ -181,7 +181,7 @@ function renderHome(ctx) {
       h('h2', 'How this course works'),
       h(
         'ul.how-list',
-        h('li', h('b', 'Run, then read. '), 'Each chapter is built around live figures. Drag the sliders past the safe limits on purpose: most of the lessons are in the failures.'),
+        h('li', h('b', 'Run, then read. '), 'Each chapter is built around live figures. Drag the sliders past the safe limits on purpose, since most of the lessons are in the failures.'),
         h('li', h('b', 'People and notation. '), 'The asides tell you who worked each idea out, and when. The notation chapter and the symbols page explain where ∂, ∇ and Re came from.'),
         h('li', h('b', 'Check yourself. '), 'Short questions, some of them asking you to predict before you run, keep track of what you have learned on this device.'),
       ),

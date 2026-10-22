@@ -267,29 +267,92 @@ check them. They are the same code.
 - **Facts come from the dossier.** People, dates, attributions and quotations
   come from `src/reference/people-data.js` and the fact-checked research
   dossier. Do not introduce a new date or attribution without a reliable
-  source. Where the record is contested, say so, briefly.
+  source.
+- **State what is positively attested; drop negative research disclaimers.**
+  Give the earliest attested use or paper in the dossier (*"The term
+  'vorticity' appears in Lamb's Hydrodynamics of 1895"*). Do not append
+  boilerplate disclaimers when a coiner or first user is unrecorded (*"who
+  coined it is not established"*, *"who first used the symbol is not known"*,
+  *"No single inventor is known"*). Mention contested attribution only when
+  correcting a specific, widespread misconception (such as Maxwell coining
+  "nabla" or Lagrange advocating the Lagrangian viewpoint).
 - **Two dates when they differ.** If a paper was read in one year and printed
   in another, say which date you mean ("presented 1822, published 1827").
 - **No invented quotations.** A quotation must be verbatim and sourced, or
   paraphrased without quotation marks.
 - **Know the eponyms.** Things named after people often were not first done
-  by them. Where an eponym is misleading, that is worth a sentence.
+  by them. When an eponym is historically misleading, state who derived or
+  named it directly.
 - **Public sources only.** Describe techniques generically, with published
   citations. Never mention, hint at, or borrow names from any private or
   proprietary codebase.
 
-## Voice
+## Voice and style
 
-- Write for a curious programmer who knows calculus and some linear algebra,
-  but no fluid dynamics.
-- Plain English, short sentences, active voice, second person for
-  instructions.
-- Explain the physical meaning before the formula, then show the formula,
-  then let the reader break it.
-- Use British spelling, matching the rest of the repo: colour, modelling,
-  behaviour.
-- No hype and no filler. Every paragraph should either explain, show, or
-  hand the reader something to do.
+Write for a curious programmer who knows calculus and some linear algebra, but
+no fluid dynamics. Explain the physical meaning before the formula, show the
+formula, and let the reader test or break it in the figure. Use British
+spelling (`colour`, `modelling`, `behaviour`, `discretise`, `labelled`).
+
+### Sentence construction and rhythm
+
+- **Combine clauses with real conjunctions, not colons.** Vary sentence length
+  naturally by joining cause, condition, and consequence with `because`,
+  `since`, `so`, `when`, `if`, or `although`. Use a colon only to introduce an
+  equation, a list, or an immediate mathematical specification—not as an
+  all-purpose substitute for a conjunction or period. Use an em-dash (`—`)
+  when setting off an appositive list or a sharp concluding phrase.
+  - *Avoid:* `"Halving the pressure doubles λ: rarefaction and smallness are the same problem."`
+  - *Prefer:* `"Halving the pressure has the same effect on Kn as halving L, because λ scales inversely with pressure."`
+- **Use declarative or participial subjects for derivations.** Express
+  mathematical operations with gerunds, conditionals, or noun phrases
+  (*"Dividing by the length scale $L$ gives..."*, *"Substituting a single
+  Fourier mode shows..."*) rather than repeating the imperative-plus-`and`
+  pattern (*"Do X, and you have/get Y"*). Reserve imperatives for actual reader
+  actions in `<div class="try">` lists and figure walkthroughs.
+  - *Avoid:* `"Compare it with the length scale L of the flow and you have the Knudsen number."`
+  - *Prefer:* `"Dividing by the length scale L of the flow gives the Knudsen number, Kn = λ / L."`
+- **Define positively first.** State what a concept or phenomenon *is* before
+  ruling out misconceptions. Do not lean on the two-sentence negative-positive
+  formula (`"X is not Y. It is Z."`) as a default way to define terms. Keep a
+  negative clause only when addressing a genuine trap after the positive
+  mechanism has been explained.
+  - *Avoid:* `"Stiffness is not a property of the solution. It is the mismatch between the step that accuracy needs and the step that an explicit method's stability allows."`
+  - *Prefer:* `"In a stiff problem, the fastest modes decay on a timescale much shorter than the motion of interest—forcing an explicit solver to take tiny steps for stability even when the solution is varying slowly. If you actually need to resolve those fast modes, the problem is not stiff, regardless of the eigenvalue ratio."`
+
+### Precision over rhetoric
+
+- **Name the concrete mechanism; no seesaw epigrams or coy teasers.** State
+   explicitly what an equation, notation, or scheme does instead of pairing
+  symmetrical opposites into magazine-style aphorisms or withholding the noun
+  behind indefinite pronouns (*"hid something"*, *"does something new"*,
+  *"Two facts hidden in (7.2)"*).
+  - *Avoid:* `"Each new notation made the equations shorter. Each one also hid something that the older form said out loud."`
+  - *Prefer:* `"Each step compressed the equations by leaving more to convention—which variables are held fixed, how the axes are oriented, or which indices are summed."`
+  - *Avoid:* `"It also does something new. The velocity appears twice, so the term is quadratic in u: the flow carries itself."`
+  - *Prefer:* `"Because the velocity multiplies its own gradient, the term is quadratic in u—the nonlinearity that drives both shock formation and turbulence."`
+- **Use literal technical verbs.** Describe equations, notations, and numerical
+  errors with accurate verbs (*leave implicit*, *write out*, *damp*, *compensate
+  for*, *overshoot*, *oscillate*, *alias*) rather than conspiratorial metaphors
+  (*hide*, *in disguise*, *say out loud*, *tell you when it is lying*),
+  relentless commercial metaphors (*buy*, *pay*, *the bill*, *for free*,
+  *bargain*), or cute anthropomorphism (*polite fluids*, *lazy solutions*,
+  *smooth data hardly notice*).
+  - *Avoid:* `"With heavier smoothing the problem is hidden: two red–black sweeps each way repair the constant version."`
+  - *Prefer:* `"Two red–black smoothing sweeps per level are enough to compensate for piecewise-constant prolongation, though bilinear prolongation avoids the issue outright."`
+- **Lead with the substance; cut throat-clearing and hype.** Start paragraphs
+  and transitions with the technical connection, the theorem, or the measured
+  numbers. Do not use melodramatic verbless fragments (*"Now the price."*,
+  *"Now the trap."*, *"Now the surprise."*), meta-commentary announcing that a
+  point is worth making (*"Now the result that makes multigrid special."*,
+  *"The onset in the last item is worth a sentence."*, *"The second case
+  deserves a name of its own."*), or sweeping totality claims (*"That is the
+  whole of the diffusion equation"*, *"That $k^2$ is the root of everything in
+  this chapter"*).
+  - *Avoid:* `"Now the price. Go back to the stencil figure in Look upwind and pick Lax–Wendroff: its parabola has a negative weight... Smooth data hardly notice. A square wave rings."`
+  - *Prefer:* `"The drawback of Lax–Wendroff appears in its stencil weights. In the figure under Look upwind, one of its three weights is negative, a property shared by every linear scheme of second order or higher. With a negative weight, the new value is no longer bounded by the old ones. Smooth profiles are barely affected, but a square wave develops trailing ripples."`
+  - *Avoid:* `"Now the result that makes multigrid special. On the closed box, the residual factor per V(2,2) cycle is 0.058 at 16²..."`
+  - *Prefer:* `"On the closed box with bilinear transfers, a V(2,2) cycle reduces the residual by a factor of 0.058 at 16², 0.070 at 32², and 0.081 at both 64² and 128²—a rate that stays bounded as the grid is refined."`
 
 ## Checks
 

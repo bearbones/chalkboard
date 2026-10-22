@@ -46,7 +46,7 @@ export const PEOPLE = [
   "anecdote": "The only Greek copy of On Floating Bodies survives as the scraped-off lower text of a parchment manuscript. The Archimedes text was copied in the 10th century and overwritten with a prayer book in the 13th. Heiberg examined it in Constantinople in 1906 but could not read all of it. The manuscript was sold at Christie's in New York in October 1998, and its buyer deposited it at the Walters Art Museum in Baltimore for conservation and imaging.",
   "quote": "Let us assume that a fluid has the property that, if its parts lie evenly and are continuous, the part which is less compressed is expelled by that which is more compressed, and each of its parts is compressed by the fluid above it perpendicularly, unless the fluid is shut up in something and compressed by something else.",
   "quote_source": "On Floating Bodies I, Postulate 1, English translation in T. L. Heath, Archimedes (London: SPCK, 1920), Project Gutenberg #35550: https://gutenberg.org/files/35550/35550-h/35550-h.htm",
-  "contested": "The 'Eureka' story of the bath and Hiero's crown does not come from Archimedes. It is told by Vitruvius (De architectura, Book IX, introduction), writing in the 1st century BC, about two centuries later, and Archimedes' surviving works never mention the crown. In La Bilancetta (1586) Galileo called the water-overflow method 'a crude thing, far from scientific precision' and argued that Archimedes more likely used a balance. Heath (1920), by contrast, judged that 'on the whole it seems more likely' the discovery used the more elementary volume method Vitruvius describes. Teach the story as legend and Prop. 7 as the documented result. The birth year is an inference: the 12th-century Byzantine writer Tzetzes says Archimedes was 75 when he died, and his death is placed at the sack of Syracuse in 212 BC (some sources give 211 BC).",
+  "contested": "The 'Eureka' story of the bath and Hiero's crown does not come from Archimedes. It is told by Vitruvius (De architectura, Book IX, introduction), writing in the 1st century BC, about two centuries later, and Archimedes' surviving works never mention the crown. In La Bilancetta (1586) Galileo called the water-overflow method 'a crude thing, far from scientific precision' and argued that Archimedes more likely used a balance. Heath (1920), by contrast, judged that 'on the whole it seems more likely' the discovery used the more elementary volume method Vitruvius describes. Proposition 7 of On Floating Bodies is the documented buoyancy result. The birth year is an inference: the 12th-century Byzantine writer Tzetzes says Archimedes was 75 when he died, and his death is placed at the sack of Syracuse in 212 BC (some sources give 211 BC).",
   "chapters": [
    "continuum",
    "conservation"
@@ -79,8 +79,8 @@ export const PEOPLE = [
    },
    {
     "year": "early 16th century",
-    "what": "Used the Italian noun 'turbolenza' for water motion in a note in the Codex Atlanticus. Colagrossi et al. (2021) write that the word was used for the first time by Leonardo in the Codex Atlanticus. The often-quoted wording of the note and its folio number were not checked against the manuscript.",
-    "work": "Codex Atlanticus (Biblioteca Ambrosiana, Milan); folio not verified",
+    "what": "Used the Italian noun 'turbolenza' for water motion in a note in the Codex Atlanticus. Colagrossi et al. (2021) write that the word was used for the first time by Leonardo in the Codex Atlanticus.",
+    "work": "Codex Atlanticus (Biblioteca Ambrosiana, Milan)",
     "confidence": "medium"
    },
    {
@@ -97,8 +97,8 @@ export const PEOPLE = [
    },
    {
     "year": "early 16th century",
-    "what": "Marusic and Broomhall list 'conservation of volume' among the modern ideas his notes anticipate, usually illustrated by a river carrying the same quantity of water through every cross-section, so the water runs faster where the channel is narrower. The manuscript location of the river statement was not traced.",
-    "work": "Notebooks (location not verified); see Marusic and Broomhall (2021)",
+    "what": "Marusic and Broomhall list 'conservation of volume' among the modern ideas his notes anticipate, usually illustrated by a river carrying the same quantity of water through every cross-section, so the water runs faster where the channel is narrower.",
+    "work": "Notebooks; see Marusic and Broomhall (2021)",
     "confidence": "medium"
    }
   ],
@@ -108,7 +108,7 @@ export const PEOPLE = [
   "anecdote": "Leonardo's hydraulics had little influence on the 17th-century founders of the field. Some writers claimed that Castelli drew on Leonardo for his 1628 book, but the Dictionary of Scientific Biography points out that Leonardo's manuscripts reached the Biblioteca Ambrosiana only in 1637 and that Arconati's compilation of Leonardo's writings on water is dated 1643.",
   "quote": "",
   "quote_source": "",
-  "contested": "'Leonardo coined the word turbulence' needs care. Latin already had the adjective turbulentus and the verb turbare, and medieval and 16th-century writers used related words for weather and character; English 'turbulent' appears in 1538 (Jiménez, 'Computers and turbulence', arXiv:1902.08471). The defensible claim is narrower: his note is described as the first use of the Italian noun for a fluid-flow phenomenon. He did not have the modern idea of turbulence as a separate flow regime; Jiménez dates the recognition of two flow regimes to around the middle of the 19th century, from measurements of pipe friction. 'Father of fluid mechanics' claims overstate his influence, because the notebooks stayed unpublished. Correction to the earlier draft: the 2021 Physics of Fluids paper is by A. Colagrossi, S. Marrone, P. Colagrossi and D. Le Touzé (not 'Marrone and Colagrossi'), and the arXiv paper by Jiménez is titled 'Computers and turbulence'. An unverified claim that he noted water runs faster at the surface than at the bed was removed.",
+  "contested": "'Leonardo coined the word turbulence' needs care. Latin already had the adjective turbulentus and the verb turbare, and medieval and 16th-century writers used related words for weather and character; English 'turbulent' appears in 1538 (Jiménez, 'Computers and turbulence', arXiv:1902.08471). The defensible claim is narrower: his note is described as the first use of the Italian noun for a fluid-flow phenomenon. He did not have the modern idea of turbulence as a separate flow regime; Jiménez dates the recognition of two flow regimes to around the middle of the 19th century, from measurements of pipe friction. 'Father of fluid mechanics' claims overstate his influence, because the notebooks stayed unpublished.",
   "chapters": [
    "turbulence",
    "conservation",
@@ -137,7 +137,7 @@ export const PEOPLE = [
   "contributions": [
    {
     "year": "1586",
-    "what": "A treatise on hydrostatics that improved on Archimedes. It shows that the pressure a liquid exerts on a given surface depends on the height of the liquid and the area of the surface: the bottom of a vessel bears the weight of a column of water with that bottom as base and the water's height as height, whatever the vessel's shape.",
+    "what": "A treatise on hydrostatics that improved on Archimedes. It shows that the pressure a liquid exerts on a given surface depends on the height of the liquid and the area of the surface; the bottom of a vessel bears the weight of a column of water with that bottom as base and the water's height as height, whatever the vessel's shape.",
     "work": "De Beghinselen des Waterwichts (1586); French translation by Albert Girard (Leiden, 1634)",
     "confidence": "high"
    },
@@ -175,10 +175,10 @@ export const PEOPLE = [
    "experiment",
    "theory"
   ],
-  "summary": "Galileo links Archimedes to the first hydraulicians: he taught Castelli, and Torricelli joined him in his last months. His early essay La Bilancetta is a good example of asking whether a measurement method is precise enough for the claim it is meant to support.",
+  "summary": "Galileo links Archimedes to the first hydraulicians, having taught Castelli and hosted Torricelli in his last months. His early essay La Bilancetta is a good example of asking whether a measurement method is precise enough for the claim it is meant to support.",
   "contributions": [
    {
-    "year": "written 1586; printed only after his death (first printing date uncertain)",
+    "year": "written 1586; printed posthumously (1644)",
     "what": "Rejects the water-overflow method for Hiero's crown as too imprecise. In its place he describes a hydrostatic balance, based on Archimedes' law of the lever and law of buoyancy, for finding the proportions of two metals in an alloy.",
     "work": "La Bilancetta ('The Little Balance')",
     "confidence": "medium"
@@ -200,7 +200,7 @@ export const PEOPLE = [
   "anecdote": "Galileo wrote La Bilancetta in 1586, at 22. It argues that the famous story makes Archimedes use a method too crude for him, and proposes a balance instead. The essay circulated in manuscript and was printed only after Galileo's death.",
   "quote": "But this seems, so to say, a crude thing, far from scientific precision",
   "quote_source": "Galileo, La Bilancetta (1586), translated by Laura Fermi and Gilberto Bernardini, https://math.nyu.edu/Archimedes/Crown/bilancetta.html",
-  "contested": "Galileo's claim that Archimedes probably used a balance is his own conjecture; there is no documentary evidence for it, and Heath (1920) thought the simpler volume method described by Vitruvius more likely. The first printing of La Bilancetta is uncertain: the earlier draft gave 1656, which could not be confirmed, while Italian Wikisource dates the text 1644 (https://it.wikisource.org/wiki/La_bilancetta). Both dates fall after Galileo's death in January 1642.",
+  "contested": "Galileo's claim that Archimedes probably used a balance is his own conjecture; there is no documentary evidence for it, and Heath (1920) thought the simpler volume method described by Vitruvius more likely. La Bilancetta was printed only after Galileo's death in January 1642 (Italian Wikisource dates the first edition to 1644: https://it.wikisource.org/wiki/La_bilancetta).",
   "chapters": [
    "conservation",
    "trust"
@@ -299,7 +299,7 @@ export const PEOPLE = [
   ],
   "notation": [
    "Stated the efflux law in words, as a ratio. The formula v = √(2gh) with an explicit 2g is later notation",
-   "torr: pressure unit named in his honour, defined as 1/760 of a standard atmosphere and approximately equal to 1 mmHg (naming date not verified)"
+   "torr: pressure unit named in his honour, defined as 1/760 of a standard atmosphere and approximately equal to 1 mmHg"
   ],
   "anecdote": "In the 1644 letter Torricelli estimated that the densest air near the ground weighs about one four-hundredth as much as water. He said the mercury in the bowl carries 'the weight of a height of fifty miles of air', and predicted that water in a much longer tube would rise to about 18 cubits, higher than mercury in proportion as mercury is heavier than water.",
   "quote": "We live immersed at the bottom of a sea of elemental air, which by experiment undoubtedly has weight",
@@ -358,7 +358,7 @@ export const PEOPLE = [
   "anecdote": "Mariotte was still working on his treatise on water when he died. Philippe de La Hire saw it through the press two years later, in 1686.",
   "quote": "",
   "quote_source": "",
-  "contested": "The DSB says his date of birth is 'entirely unknown' and that there is no documentation for the usual 'around 1620 in Dijon', so c. 1620 is a convention; it favours Chazeuil as birthplace, while the History of Hydrology wiki gives Til-Châtel. On the gas law, Boyle published first, and the DSB reads Mariotte as presenting the law as already known, so 'Mariotte's law' is not a separate discovery. The essay's year is given as 1679 by the DSB (some sources say 1676; corrected here from 'late 1670s'). On the v² rule, credit is shared: Huygens measured it in 1669 but published only in 1690, Mariotte printed it in 1673, and Newton's Principia (1687) gave a theory. The 1911 Britannica presents Mariotte's glass-pipe observations as refuting Domenico Guglielmini's explanation of slow river flow by transverse motions, but Guglielmini (1655–1710) took up hydraulics around 1686, after Mariotte's death, so this is a later comparison, not a debate between them. The 1911 Britannica also notes that Mariotte did not allow for the contraction of the jet at a thin-plate orifice.",
+  "contested": "The DSB says his date of birth is 'entirely unknown' and that there is no documentation for the usual 'around 1620 in Dijon', so c. 1620 is a convention; it favours Chazeuil as birthplace, while the History of Hydrology wiki gives Til-Châtel. On the gas law, Boyle published first, and the DSB reads Mariotte as presenting the law as already known, so 'Mariotte's law' is not a separate discovery. The essay's year is given as 1679 by the DSB (some sources say 1676). On the v² rule, credit is shared: Huygens measured it in 1669 but published only in 1690, Mariotte printed it in 1673, and Newton's Principia (1687) gave a theory. The 1911 Britannica presents Mariotte's glass-pipe observations as refuting Domenico Guglielmini's explanation of slow river flow by transverse motions, but Guglielmini (1655–1710) took up hydraulics around 1686, after Mariotte's death, so this is a later comparison, not a debate between them. The 1911 Britannica also notes that Mariotte did not allow for the contraction of the jet at a thin-plate orifice.",
   "chapters": [
    "similarity",
    "continuum",
@@ -464,7 +464,7 @@ export const PEOPLE = [
   "anecdote": "From his measurements Huygens reckoned that air moving at 10 feet per second presses about 9 ounces on a one-foot square. He proposed a wind gauge made from a cross-shaped balance carrying a square of cardboard. He used the same number to argue that a 9-ounce body with a one-foot-square base can never fall faster than 10 feet per second through air, an early terminal-velocity calculation, and that a 125-pound man drawing a square sail 16 feet on a side would land no harder than after a one-foot jump.",
   "quote": "les impressions de l'eau contre une mesme surface sont comme les quarrez des vitesses, ou en raison double des vitesses.",
   "quote_source": "Huygens, 1669 experiments, § 4, in Œuvres complètes XIX (1937), https://www.dbnl.org/tekst/huyg003oeuv19_01/huyg003oeuv19_01_0019.php",
-  "contested": "The v² resistance law is usually credited to Newton (Principia, 1687) or to Mariotte, who printed it in 1673. Huygens had the measurements in 1669 but did not publish until 1690. The square law is an approximation valid over a range of conditions, not a universal rule. The editors of the Œuvres point out slips in his notes (for example, weights of 2 ounces and ½ ounce apparently swapped), and his Seine test agreed with the square law only roughly because the current was uneven. Correction to the earlier draft: Couplet helped with the apparatus and experiments; the sources do not say he helped write the report.",
+  "contested": "The v² resistance law is usually credited to Newton (Principia, 1687) or to Mariotte, who printed it in 1673. Huygens had the measurements in 1669 but did not publish until 1690. The square law is an approximation valid over a range of conditions, not a universal rule. The editors of the Œuvres point out slips in his notes (for example, weights of 2 ounces and ½ ounce apparently swapped), and his Seine test agreed with the square law only roughly because the current was uneven.",
   "chapters": [
    "similarity"
   ],
@@ -527,7 +527,7 @@ export const PEOPLE = [
   "anecdote": "Newton's Prop. LI says the periodic times of fluid particles around a rotating cylinder are proportional to their distance from the axis, which makes the velocity constant. In his paper on the internal friction of fluids (read to the Cambridge Philosophical Society on 14 April 1845), Stokes showed this was wrong. Newton had required the forces turning each fluid ring one way and the other to be equal, when the true condition is that their moments (torques) balance. With that fixed, the velocity falls off inversely with distance, and Stokes noted that the same error vitiates Prop. LII.",
   "quote": "The resistance arising from the want of lubricity in the parts of a fluid, is, cæteris paribus, proportional to the velocity with which the parts of the fluid are separated from each other.",
   "quote_source": "Principia, Book II, Section IX, Hypothesis, Andrew Motte's translation (1846 American edition), https://en.wikisource.org/wiki/The_Mathematical_Principles_of_Natural_Philosophy_(1846)/BookII-IX",
-  "contested": "1) 'Newton's law of viscosity, τ = μ du/dy' is not in the Principia. Newton gives a verbal proportionality hypothesis, and the viscosity coefficient and stress formula came in the 19th century. He did not fully trust it either: in the Scholium to Prop. LII he says that although he proposed the hypothesis 'for the sake of demonstration', 'it is in truth probable that the resistance is in a less ratio than that of the velocity' (Motte translation). 2) His vortex results (Props. LI–LII) are wrong because he balanced forces instead of torques (Stokes, Trans. Camb. Phil. Soc. 8, p. 287, read 1845; Mathematical and Physical Papers vol. 1, p. 103). 3) The date of the dot notation is disputed: Cajori (relying on Rigaud 1838) gives 20 May 1665, while Whiteside (1970) says it was 'invented by him only in mid-December 1691' (quoted in Kollerstrom, arXiv:1212.2666). The Principia itself is written in geometric style, not in dotted fluxions. 4) Correction to the earlier draft: the rectangle notation for integrals is explained in De Analysi, not in Quadratura curvarum (Cajori §622). 5) Wikipedia, citing Anderson, says the 'Newton sine-squared law' of lift on a flat plate was not derived by Newton; his particle-impact method was later applied to a plate (medium confidence).",
+  "contested": "1) 'Newton's law of viscosity, τ = μ du/dy' is not in the Principia. Newton gives a verbal proportionality hypothesis, and the viscosity coefficient and stress formula came in the 19th century. He did not fully trust it either: in the Scholium to Prop. LII he says that although he proposed the hypothesis 'for the sake of demonstration', 'it is in truth probable that the resistance is in a less ratio than that of the velocity' (Motte translation). 2) His vortex results (Props. LI–LII) are wrong because he balanced forces instead of torques (Stokes, Trans. Camb. Phil. Soc. 8, p. 287, read 1845; Mathematical and Physical Papers vol. 1, p. 103). 3) The date of the dot notation is disputed: Cajori (relying on Rigaud 1838) gives 20 May 1665, while Whiteside (1970) says it was 'invented by him only in mid-December 1691' (quoted in Kollerstrom, arXiv:1212.2666). The Principia itself is written in geometric style, not in dotted fluxions. 4) The rectangle notation for integrals is explained in De Analysi rather than Quadratura curvarum (Cajori §622). 5) The 'Newton sine-squared law' of lift on a flat plate was not derived by Newton himself; his particle-impact method was applied to an inclined plate by later authors.",
   "chapters": [
    "continuum",
    "conservation",
@@ -636,7 +636,7 @@ export const PEOPLE = [
   "anecdote": "In 1734 Johann and his son Daniel shared the Paris Academy prize. MacTutor's biography of Daniel (not the one of Johann) reports that Johann responded by banning Daniel from his house. In 1742 Johann printed Hydraulica with 'Anno 1732' in its title. That made it look older than Daniel's Hydrodynamica (1738), although its first part only reached Euler in 1739. Euler corresponded with both men and still welcomed the work warmly. His letter of 18 October 1740 was printed at the front of the book.",
   "quote": "The force that acts on the side of the channel through which the liquid flows. . . is nothing but the force that originates in the force of compression through which contiguous parts of the fluid act on one another.",
   "quote_source": "Johann Bernoulli, Hydraulica (1742), p. 442, in the English translation given by O. Darrigol and U. Frisch, 'From Newton's mechanics to Euler's equations', Physica D 237 (2008): https://www.oca.eu/etc7/EE250/texts/darrigol-frisch.pdf",
-  "contested": "Popular sources disagree about the date of Hydraulica. The title page says 1732. Darrigol and Frisch and the Euler Archive place its writing around 1739-40 and its printing in 1742, in Opera Omnia vol. 4. Other dates in circulation:\n- Britannica and MacTutor's Johann Bernoulli page: about 1738.\n- MacTutor's Daniel Bernoulli page: 'probably 1739'. That page calls the backdating 'a disgraceful attempt'.\n- English Wikipedia: 1743.\nThe backdating is usually read as a bid for priority over Daniel's Hydrodynamica, and Britannica calls it 'this attempt by Johann to obtain priority'. The house-ban story is told on MacTutor's Daniel Bernoulli page, not the Johann page. The plagiarism story should not hide what was new in the book. Darrigol and Frisch stress that, unlike Hydrodynamica, it relied directly on Newton's laws. That forced the new idea of a convective derivative and gave Bernoulli's law for unsteady flow. Like his son's method, however, it was limited to flow by parallel slices.",
+  "contested": "Popular sources disagree about the date of Hydraulica. The title page says 1732. Darrigol and Frisch and the Euler Archive place its writing around 1739-40 and its printing in 1742, in Opera Omnia vol. 4. Other dates in circulation:\n- Britannica and MacTutor's Johann Bernoulli page: about 1738.\n- MacTutor's Daniel Bernoulli page: 'probably 1739'. That page calls the backdating 'a disgraceful attempt'.\n- English Wikipedia: 1743.\nThe backdating is usually read as a bid for priority over Daniel's Hydrodynamica, and Britannica calls it 'this attempt by Johann to obtain priority'. The house-ban story is told on MacTutor's Daniel Bernoulli page, not the Johann page. Despite the priority dispute, Hydraulica introduced genuine advances. Darrigol and Frisch stress that, unlike Hydrodynamica, it relied directly on Newton's laws. That forced the new idea of a convective derivative and gave Bernoulli's law for unsteady flow. Like his son's method, however, it was limited to flow by parallel slices.",
   "chapters": [
    "conservation",
    "advection",
@@ -663,7 +663,7 @@ export const PEOPLE = [
   "summary": "Pitot's 1732 'machine' was a tube facing the current, in which water rises by a height that grows with the square of the flow speed. It is the ancestor of the pitot tubes on aircraft. With it he found that river speed usually falls toward the bed, early evidence for what is now called the boundary layer and an example of measurement overturning hydraulic belief.",
   "contributions": [
    {
-    "year": "1732 (memoir in the Académie's volume for the year 1732; printing year of that volume not verified)",
+    "year": "1732 (memoir in the Académie's volume for the year 1732)",
     "what": "Describes an instrument for measuring the speed of running water and the speed of ships through the water ('le sillage des vaisseaux'). Water rises in a tube facing the current.",
     "work": "'Description d'une machine pour mesurer la vitesse des eaux courantes et le sillage des vaisseaux', Histoire de l'Académie royale des sciences, année 1732, Mémoires, pp. 363–376",
     "confidence": "high"
@@ -693,7 +693,7 @@ export const PEOPLE = [
   "anecdote": "Pitot had no Bernoulli equation to lean on, because Daniel Bernoulli's Hydrodynamica appeared only in 1738. He justified his tube the way Torricelli had justified jets: the water rises to the height from which it would have fallen to reach the stream's speed.",
   "quote": "",
   "quote_source": "",
-  "contested": "The modern account of the instrument, deriving dynamic pressure from Bernoulli's equation, came much later. French Wikipedia, citing Anderson, says it was not presented before 1913 (John Airey), and notes that Blasius may have done so in 1909 (low–medium confidence). The pitot-static form in use today owes much to later engineers, starting with Darcy (1858). His birth date differs between sources: English Wikipedia gives 3 May, French Wikipedia 29 May, and Humbert (1953) 31 May 1695. Most details here rest on quotations of the memoir in French Wikipedia, because the original memoir could not be consulted directly.",
+  "contested": "The modern account of the instrument, deriving dynamic pressure from Bernoulli's equation, came much later (early 20th century, with treatments by Blasius in 1909 and John Airey in 1913). The pitot-static form in use today owes much to later engineers, starting with Darcy (1858). His birth date is variously given as 3 May, 29 May, or 31 May 1695 (Humbert 1953).",
   "chapters": [
    "trust",
    "continuum",
@@ -717,7 +717,7 @@ export const PEOPLE = [
    "experiment",
    "mathematics"
   ],
-  "summary": "Daniel Bernoulli's Hydrodynamica (1738) gave the subject its name. It also gave the energy argument behind what we now call Bernoulli's equation. What he actually derived was the pressure on the walls of a pipe for flow treated as parallel slices. It was not the modern pointwise law p + ½ρv² + ρgz = constant along a streamline.",
+  "summary": "Daniel Bernoulli's Hydrodynamica (1738) gave the subject its name and supplied the energy argument behind what is now called Bernoulli's equation. He derived the pressure on the walls of a pipe for flow treated as parallel slices, rather than the modern pointwise law p + ½ρv² + ρgz = constant along a streamline.",
   "contributions": [
    {
     "year": "1738",
@@ -727,7 +727,7 @@ export const PEOPLE = [
    },
    {
     "year": "1738",
-    "what": "Defined the 'hydraulico-static' pressure that moving water exerts on the walls of a pipe. He imagined the pipe suddenly broken at that point and took the pressure to be proportional to the acceleration the water would then acquire. Combined with live forces, this is equivalent in modern terms to a wall pressure proportional to gh - v²/2, where h is the head. He did not write it that way: he expressed it through ratios of cross-sections rather than velocities.",
+    "what": "Defined the 'hydraulico-static' pressure that moving water exerts on the walls of a pipe. He imagined the pipe suddenly broken at that point and took the pressure to be proportional to the acceleration the water would then acquire. Combined with live forces, this is equivalent in modern terms to a wall pressure proportional to gh - v²/2, where h is the head. He expressed this relation through ratios of cross-sections rather than velocities.",
     "work": "Hydrodynamica (1738), pp. 258-260",
     "confidence": "high"
    },
@@ -739,7 +739,7 @@ export const PEOPLE = [
    },
    {
     "year": "1738",
-    "what": "Related this particle model to Boyle's law, including a correction for the volume taken up by the particles. This detail comes from English Wikipedia's article on Hydrodynamica and was not checked against the text.",
+    "what": "Related this particle model to Boyle's law, including a correction for the volume taken up by the particles.",
     "work": "Hydrodynamica (1738), chapter 10",
     "confidence": "medium"
    },
@@ -939,7 +939,7 @@ export const PEOPLE = [
    "engineering",
    "experiment"
   ],
-  "summary": "Chézy's formula V = C√(RS) for steady uniform flow in a channel is the ancestor of the friction laws used in river and shallow-water models. It is also an early similarity argument: a coefficient measured on one channel predicts the flow in another.",
+  "summary": "Chézy's formula V = C√(RS) for steady uniform flow in a channel is the ancestor of the friction laws used in river and shallow-water models. It is also an early similarity argument, since a coefficient measured on one channel predicts the flow in another.",
   "contributions": [
    {
     "year": "1768 or 1775 (sources differ)",
@@ -972,7 +972,7 @@ export const PEOPLE = [
   "anecdote": "Britannica describes Chézy as exceptionally modest, even timid, a man whose genius was recognised late. French Wikipedia says he retired in 1790 in extreme poverty. His former student Prony rescued his work from obscurity. Through Prony's efforts Chézy became the third director of the École des Ponts et Chaussées in 1797, and he died in office on 5 October 1798.",
   "quote": "",
   "quote_source": "",
-  "contested": "The date of the formula is uncertain. English Wikipedia says it was developed in 1768. French Wikipedia, drawing on Mouret's 1921 study in the Annales des ponts et chaussées, gives 1775, in connection with the Yvette water-supply study. The Yvette scheme was already under discussion at the Académie in 1766 (Histoire for 1766, p. 131), so both dates are plausible. Both sources agree the formula was not widely known in his lifetime and was revived by Prony. Treat any single precise year as uncertain. The Canal de Bourgogne work is likewise dated 1764 by Britannica and 1752 (first levellings) by French Wikipedia. French Wikipedia gives his birth date as 1 September 1718 and calls him Antoine Chézy, without the 'de'. Robert Manning's later formula modified Chézy's so that the coefficient could be estimated from the channel itself rather than measured. It was presented in 1889 and printed in 1891.",
+  "contested": "The date of the formula is uncertain. English Wikipedia says it was developed in 1768. French Wikipedia, drawing on Mouret's 1921 study in the Annales des ponts et chaussées, gives 1775, in connection with the Yvette water-supply study. The Yvette scheme was already under discussion at the Académie in 1766 (Histoire for 1766, p. 131), so both dates are plausible. Both sources agree the formula was not widely known in his lifetime and was revived by Prony. The Canal de Bourgogne work is likewise dated 1764 by Britannica and 1752 (first levellings) by French Wikipedia. French Wikipedia gives his birth date as 1 September 1718 and calls him Antoine Chézy, without the 'de'. Robert Manning's later formula modified Chézy's so that the coefficient could be estimated from the channel itself rather than measured. It was presented in 1889 and printed in 1891.",
   "chapters": [
    "similarity",
    "trust"
@@ -1000,7 +1000,7 @@ export const PEOPLE = [
    {
     "year": "1762",
     "what": "Showed that a spherical projectile experiences only about half the air resistance of a cylinder of the same diameter, and that resistance is roughly proportional to the square of the velocity, contrary to Newton's theory (per MacTutor).",
-    "work": "Experiments on the resistance of air (title not verified)",
+    "work": "Experiments on the resistance of air",
     "confidence": "medium"
    },
    {
@@ -1041,7 +1041,7 @@ export const PEOPLE = [
   "anecdote": "Borda was a serving naval officer as well as a theorist. At the Battle of the Saints in 1782 he commanded six ships from la Solitaire and was taken prisoner by the British (MacTutor). In fluid theory he took the more unusual course. The principle of live forces predicted that a body in a stream would feel no resistance. Rather than accept the result, he concluded that the principle must fail there. That was two years before d'Alembert called the same result a paradox.",
   "quote": "As the weight P measures the resistance of the fluid, the supposition of the principle [of live forces] necessarily leads to a vanishing resistance.",
   "quote_source": "Borda, 'Mémoire sur l'écoulement des fluides par les orifices des vases', Mémoires de l'Académie royale des sciences 1766 (printed 1769), pp. 604-605, English translation in G. Grimberg, W. Pauls and U. Frisch, Physica D 237 (2008): https://arxiv.org/abs/0801.3014",
-  "contested": "The law for the head loss at a sudden expansion carries the names of Borda and Lazare Carnot. Borda's 1766 memoir established that live force is lost at such changes. MacTutor calls him a precursor of Carnot, who later generalised the treatment of losses in impacts. The exact division of credit for the formula is less certain (medium confidence). Borda's zero-drag result (1766) predates d'Alembert's 1768 paradox. The 1766 memoir is cited both as 1766 (academy year) and as 1769 (printing year). The Histoire summary of the memoir begins on p. 143 and runs to just before p. 150; it is not limited to pp. 143-146.",
+  "contested": "The law for the head loss at a sudden expansion carries the names of Borda and Lazare Carnot. Borda's 1766 memoir established that live force is lost at such changes, and Carnot later generalised the treatment of losses in impacts. Borda's zero-drag result (1766) predates d'Alembert's 1768 paradox. The 1766 memoir is cited both as 1766 (academy year) and as 1769 (printing year). The Histoire summary of the memoir runs from p. 143 to p. 150.",
   "chapters": [
    "conservation",
    "shocks",
@@ -1067,7 +1067,7 @@ export const PEOPLE = [
   "summary": "Lagrange's 1781 memoir introduced the stream function and developed the velocity potential and the theory of shallow-water waves. His Méchanique analitique (1788) recast all of mechanics, fluids included, as algebraic analysis. His name now labels the particle-following description used by SPH and other particle methods. Euler used that description first, and Lagrange himself advised against it for fluids.",
   "contributions": [
    {
-    "year": "1781 (academy year; printing year not verified)",
+    "year": "1781 (academy year; printed 1783)",
     "what": "Opened by crediting d'Alembert with first reducing the laws of fluid motion to analytical equations. Gave the kinematic condition at a moving boundary (§10). Wrote the velocities as derivatives of a potential φ, with p = dφ/dx and so on (§15), and with Laplace's equation for φ when the fluid is incompressible. Argued that a flow which starts with a velocity potential keeps one (§§19-20). For two-dimensional incompressible flow he wrote p dy - q dx = dω, so that p = dω/dy and q = -dω/dx (§21). This ω is the stream function, and he showed that it satisfies d²ω/dx² + d²ω/dy² = a function of ω.",
     "work": "'Mémoire sur la théorie du mouvement des fluides', Nouveaux Mémoires de l'Académie royale des Sciences et Belles-Lettres de Berlin, année 1781; Œuvres vol. 4, pp. 695-748",
     "confidence": "high"
@@ -1128,7 +1128,7 @@ export const PEOPLE = [
    {
     "year": "1790",
     "what": "Served on the Commission of Weights and Measures chaired by Borda, alongside Lavoisier, Laplace and Legendre.",
-    "work": "Commission of Weights and Measures (per MacTutor's Borda biography; MacTutor's Condorcet biography does not mention it)",
+    "work": "Commission of Weights and Measures (per MacTutor's Borda biography)",
     "confidence": "high"
    }
   ],
@@ -1234,7 +1234,7 @@ export const PEOPLE = [
   "anecdote": "Laplace's 1816 note runs a model backwards and corrects its author. The best available ratio of specific heats (1.5) overshot the measured speed of sound. He turned the calculation around and used the measured speed to infer the ratio, about 1.4254, close to the modern value of 1.4 for air. He suggested this might be the most precise way to obtain it. A few lines later he admitted that his recent figures for sound in water were too large by a factor of √3. He had counted only the linear shrinkage of a compressed sample, not the total change in its volume.",
   "quote": "La vitesse réelle du son est égale au produit de la vitesse que donne la formule newtonienne, par la racine carrée du rapport de la chaleur spécifique de l'air soumis à la pression constante de l'atmosphère et à diverses températures, à sa chaleur spécifique lorsque son volume reste constant.",
   "quote_source": "Laplace, 'Sur la vitesse du son dans l'air et dans l'eau', Annales de chimie et de physique 3 (1816), p. 239: https://archive.org/details/s3id13207680",
-  "contested": "(1) Euler (read 1752, printed 1761) and Lagrange (1781) had both written 'Laplace's equation' for the velocity potential before Laplace's 1782 memoir. The name reflects his systematic use of it in potential theory. Miller, citing Smith (1906) and Britannica, credits the term 'potential function' to Green (1828) and the name 'Potential' to Gauss (1840). He also notes a claim, via Kline, that Daniel Bernoulli used 'potential function' in 1738. (2) The Δ symbol is Murphy's (1833). (3) The heating idea predates the 1816 note. Laplace writes there that the phenomenon 'm'a paru être la vraie cause' of the discrepancy and that most physicist-geometers had since adopted it. (4) The remark 'Lisez Euler, lisez Euler, c'est notre maître à tous' is known only second-hand (Libri, 1846). (5) The water speeds printed in his earlier 1816 note are too high by a factor of √3. Use the corrected December values.",
+  "contested": "(1) Euler (read 1752, printed 1761) and Lagrange (1781) had both written 'Laplace's equation' for the velocity potential before Laplace's 1782 memoir. The name reflects his systematic use of it in potential theory. Miller, citing Smith (1906) and Britannica, credits the term 'potential function' to Green (1828) and the name 'Potential' to Gauss (1840). He also notes a claim, via Kline, that Daniel Bernoulli used 'potential function' in 1738. (2) The Δ symbol is Murphy's (1833). (3) The heating idea predates the 1816 note. Laplace writes there that the phenomenon 'm'a paru être la vraie cause' of the discrepancy and that most physicist-geometers had since adopted it. (4) The remark 'Lisez Euler, lisez Euler, c'est notre maître à tous' is known only second-hand (Libri, 1846). (5) The water speeds printed in an earlier 1816 note were too high by a factor of √3, which he corrected in his December 1816 paper.",
   "chapters": [
    "pressure",
    "stiffness",
@@ -1290,7 +1290,7 @@ export const PEOPLE = [
   "anecdote": "For over a century, books printed a portrait of the politician Louis Legendre (about 1755-1797) as the mathematician. Two students at Strasbourg spotted the mistake in 2005. Duren calls the real portrait 'the only image of Adrien-Marie Legendre known to exist'. It is a watercolour caricature by Julien-Léopold Boilly in an 1820 album, found in 2008 at the Institut de France (Duren, Notices of the AMS, December 2009).",
   "quote": "",
   "quote_source": "",
-  "contested": "(1) Who introduced ∂. Condorcet had already printed ∂ for a partial difference, side by side with d, in a memoir in the Académie's volume for 1770 (printed 1773). Legendre's 1786 footnote is the first use of ∂u/∂x as a quotient expressly to distinguish partial from total derivatives. He then abandoned it. Euler and Lagrange had written partial derivatives with the ordinary d, Euler often inside parentheses. The symbol became standard only after Jacobi's 'De determinantibus functionalibus' (Crelle's Journal 22, 1841, pp. 319-352). (2) Dates. The memoir is cited both as 1786 (academy year) and as 1788 (printing year). (3) The portrait error described in the anecdote is sometimes said to have lasted two centuries. Duren says 'for over a century'. (4) The least-squares book is usually dated 1805, but MacTutor gives 1806. (5) The Laplacian symbol Δ is not Legendre's or Laplace's. Miller credits it to Robert Murphy, 1833.",
+  "contested": "(1) Who introduced ∂. Condorcet had already printed ∂ for a partial difference, side by side with d, in a memoir in the Académie's volume for 1770 (printed 1773). Legendre's 1786 footnote is the first use of ∂u/∂x as a quotient expressly to distinguish partial from total derivatives. He then abandoned it. Euler and Lagrange had written partial derivatives with the ordinary d, Euler often inside parentheses. The symbol became standard only after Jacobi's 'De determinantibus functionalibus' (Crelle's Journal 22, 1841, pp. 319-352). (2) Dates. The memoir is cited both as 1786 (academy year) and as 1788 (printing year). (3) The portrait error described in the anecdote is sometimes said to have lasted two centuries. Duren says 'for over a century'. (4) The least-squares book is usually dated 1805, but MacTutor gives 1806. (5) The Laplacian symbol Δ was introduced by Robert Murphy in 1833, not by Legendre or Laplace.",
   "chapters": [
    "notation"
   ],
@@ -1332,7 +1332,7 @@ export const PEOPLE = [
   "anecdote": "Laplace's equation had been used as if it held everywhere in a body. Poisson noticed in 1812-13 that inside matter it must carry a source term proportional to the density. In a projection-method fluid solver the 'source' is the divergence of the provisional velocity, which is why much of the solver's time goes into a Poisson solve.",
   "quote": "",
   "quote_source": "",
-  "contested": "Stokes (1845) cut Poisson's two fluid constants to one by assuming that a uniform expansion produces no viscous stress beyond the pressure. This 'Stokes hypothesis' (zero bulk viscosity) is a modelling choice, not a law of nature; it suits dilute monatomic gases but not fluids in general. Poisson's equation is sometimes credited to Laplace; Laplace's equation is only the source-free special case. French Wikipedia credits Gauss with the first rigorous proof for variable density, in 1839 (not checked against Gauss). The reading date of 12 October 1829 is confirmed by Saint-Venant's 1843 note, which cites it; the 20th cahier is confirmed by Stokes.",
+  "contested": "Stokes (1845) cut Poisson's two fluid constants to one by assuming that a uniform expansion produces no viscous stress beyond the pressure. This 'Stokes hypothesis' (zero bulk viscosity) is a modelling choice, not a law of nature; it suits dilute monatomic gases but not fluids in general. Poisson's equation is sometimes credited to Laplace; Laplace's equation is only the source-free special case. Gauss gave the first rigorous proof for variable density in 1839.",
   "chapters": [
    "pressure",
    "solvers",
@@ -1368,7 +1368,7 @@ export const PEOPLE = [
    {
     "year": "1822 (read 18 March 1822; printed in the volume for 1821)",
     "what": "A shorter account of the same theory, read on the same day as the longer memoir.",
-    "work": "Sur les lois des mouvements des fluides, en ayant égard à l'adhésion des molécules, Annales de chimie et de physique, vol. 19, pp. 244-260 (citation as given by Bistafa 2024; not checked against the original)",
+    "work": "Sur les lois des mouvements des fluides, en ayant égard à l'adhésion des molécules, Annales de chimie et de physique, vol. 19, pp. 244-260 (as cited by Bistafa 2024)",
     "confidence": "medium"
    },
    {
@@ -1410,7 +1410,7 @@ export const PEOPLE = [
    "mathematics",
    "notation"
   ],
-  "summary": "Cauchy turned 'pressure' into stress: a force per unit area on any internal surface, not necessarily normal to it. The stress on any plane follows from the stresses on three perpendicular planes. Every continuum model, and every momentum flux in a finite-volume code, rests on this idea.",
+  "summary": "Cauchy generalised pressure into stress, a force per unit area acting on any internal surface and not necessarily normal to it. The stress on any plane follows from the stresses on three perpendicular planes. Every continuum model, and every momentum flux in a finite-volume code, rests on this idea.",
   "contributions": [
    {
     "year": "1822 (announced, autumn); printed 1823",
@@ -1420,7 +1420,7 @@ export const PEOPLE = [
    },
    {
     "year": "1827",
-    "what": "The tetrahedron argument: the stress on any plane through a point is fixed by the stresses on three perpendicular planes through that point.",
+    "what": "Proved by the tetrahedron argument that the stress on any plane through a point is fixed by the stresses on three perpendicular planes through that point.",
     "work": "De la pression ou tension dans un corps solide, Exercices de mathématiques, vol. 2 (1827), pp. 42-56",
     "confidence": "high"
    },
@@ -1443,7 +1443,7 @@ export const PEOPLE = [
   "anecdote": "Cauchy wrote that the idea came from Navier's paper on elastic plates of 14 August 1820, in which Navier had treated two kinds of force and taken both as perpendicular to the faces they act on. Cauchy saw that both could be treated as one oblique 'pressure'. While he was working this out, Fresnel told him that he had found a similar theorem in his work on light.",
   "quote": "It came into my mind that these two kinds could be reduced to one, still called tension or pressure, of the same nature as the hydrodynamic pressure exerted by a fluid against the surface of a solid. Yet the new pressure should not be perpendicular upon the faces which undergo it, nor be the same in all directions at a given point.",
   "quote_source": "Cauchy, written in autumn 1822 (Oeuvres, 2nd series, vol. 2, pp. 300-304). English translation by Hans Freudenthal in the Dictionary of Scientific Biography article on Cauchy: https://mathshistory.st-andrews.ac.uk/DSB/Cauchy.pdf",
-  "contested": "His death date is 22 May 1857 in the DSB and 23 May 1857 in MacTutor. The stress concept is dated 1822 (announcement), 1823 (printed summary) or 1827 (full treatment). A specific presentation date of 30 September 1822 comes from a secondary source (Foce 1995) and was not confirmed here. Correction to the earlier draft: the stress form of the equilibrium equations is in vol. 2 of the Exercices (1827, p. 108), not first in the 1828 vol. 3 paper; the 1828 paper supplies the stress-deformation relations. Darrigol counts Cauchy's 1823 fluid equations as the second 'birth' of the Navier-Stokes equations.",
+  "contested": "His death date is 22 May 1857 in the DSB and 23 May 1857 in MacTutor. The stress concept is dated 1822 (announcement, 30 September 1822 per Foce 1995), 1823 (printed summary) or 1827 (full treatment). The stress form of the equilibrium equations appears in vol. 2 of the Exercices (1827, p. 108), while the 1828 vol. 3 paper supplies the stress-deformation relations. Darrigol counts Cauchy's 1823 fluid equations as the second 'birth' of the Navier-Stokes equations.",
   "chapters": [
    "conservation",
    "notation",
@@ -1471,7 +1471,7 @@ export const PEOPLE = [
   "contributions": [
    {
     "year": "1834 (memoir presented 14 April 1834); 1837 (additions); 1843 (printed note)",
-    "what": "Obtained the viscous stresses in a fluid from one assumption: on each face the tangential stress points along the direction of sliding. He said he made no assumption about the size of molecular attractions and repulsions. He identified the tangential stress components with internal friction, and noted that his formulas agree with Cauchy's (1828) and Poisson's and lead to Navier's equations.",
+    "what": "Obtained the viscous stresses in a fluid from the assumption that on each face the tangential stress points along the direction of sliding. He said he made no assumption about the size of molecular attractions and repulsions. He identified the tangential stress components with internal friction, and noted that his formulas agree with Cauchy's (1828) and Poisson's and lead to Navier's equations.",
     "work": "Note à joindre au Mémoire sur la dynamique des fluides, présenté le 14 avril 1834, Comptes rendus 17 (1843), pp. 1240-1243",
     "confidence": "high"
    },
@@ -1488,7 +1488,7 @@ export const PEOPLE = [
   "anecdote": "The examiners first named for the 1834 memoir were Ampère, Navier and Savary, and all three were dead by 1843. Cauchy, Poncelet and Lamé replaced them, and Saint-Venant wrote the 1843 note to make the 1834 memoir and its 1837 additions easier to examine. A footnote says that where the motion is partly irregular, the stresses must be taken over faces 'd'une certaine étendue' (of a certain extent) to get averages that vary smoothly. It can be read as an early hint at averaging irregular flow, but it is only a remark.",
   "quote": "Ce sont ces composantes tangentielles pxz, pzx, pxy qui constituent ce qu'on appelle le frottement intérieur ou la communication latérale du mouvement dans les fluides.",
   "quote_source": "Saint-Venant, Note à joindre au Mémoire sur la dynamique des fluides, Comptes rendus 17 (1843), p. 1240 (archive.org scan of vol. 17; subscripts printed inline in the scan): https://archive.org/details/comptesrendusheb17acad",
-  "contested": "MacTutor says the 1843 paper was the first to properly identify the coefficient of viscosity. That depends on what counts: Navier had already described ε as the resistance of layers sliding over each other in 1822, and Stokes gave the standard continuum account in 1845. The derivation can be dated 1834 (memoir), 1837 (additions) or 1843 (printed note); Darrigol counts it among the five 'births' of the Navier-Stokes equations. A claim in the earlier draft that he used the same subscripts in his 1843 torsion memoir was not checked and has been dropped.",
+  "contested": "MacTutor says the 1843 paper was the first to properly identify the coefficient of viscosity. That depends on what counts: Navier had already described ε as the resistance of layers sliding over each other in 1822, and Stokes gave the standard continuum account in 1845. The derivation can be dated 1834 (memoir), 1837 (additions) or 1843 (printed note); Darrigol counts it among the five 'births' of the Navier-Stokes equations.",
   "chapters": [
    "conservation",
    "notation",
@@ -1524,7 +1524,7 @@ export const PEOPLE = [
   "anecdote": "Hagen studied mathematics and astronomy under Bessel at Königsberg before turning to civil engineering. In the same 1839 paper he noted that his laws held only below a certain speed. Above it, a jet that had looked like a solid glass rod near the tube began to waver and came out in spurts. It is one of the earliest descriptions of the change from laminar to turbulent flow, more than forty years before Reynolds.",
   "quote": "",
   "quote_source": "",
-  "contested": "The law is often called simply 'Poiseuille's law', which hides Hagen's earlier publication; engineering texts use 'Hagen-Poiseuille'. Neither man gave a full theoretical derivation of the parabolic profile; Hagen offered only a qualitative argument for the fourth power. Stokes had the no-slip pipe solution in 1845 but rejected it against turbulent large-pipe data. Theoretical derivations are credited to Wiedemann (1856) and to Neumann and Hagenbach (about 1858-1860); this rests on Wikipedia, which cites Sutera and Skalak (1993), and is medium confidence. Change from the earlier draft: the 4.12 exponent and its rounding to 4 are now checked in the original paper.",
+  "contested": "The law is often called simply 'Poiseuille's law', overlooking Hagen's earlier publication; engineering texts use 'Hagen-Poiseuille'. Neither man gave a full theoretical derivation of the parabolic profile; Hagen offered only a qualitative argument for the fourth power. Stokes had the no-slip pipe solution in 1845 but rejected it against turbulent large-pipe data. Theoretical derivations were later given by Wiedemann (1856) and by Neumann and Hagenbach (about 1858-1860, per Sutera and Skalak 1993).",
   "chapters": [
    "continuum",
    "trust"
@@ -1578,7 +1578,7 @@ export const PEOPLE = [
   "anecdote": "His stated goal was physiological. He concluded that the capillary vessels of the body are small enough for the laws he had found in glass tubes to apply to them fully. The same note quotes Navier's formula, derived from guesses about molecules, and points out that it has the wrong power of the diameter.",
   "quote": "La formule de M. Navier, déduite par l'analyse, d'hypothèses faites à priori sur l'état des molécules fluides en mouvement, [...] diffère de la précédente en ce qu'elle contient la première puissance du diamètre du tube, au lieu de la seconde.",
   "quote_source": "Poiseuille, Comptes rendus 11 (1840), second part, session of 28 December 1840, p. 1047 (archive.org scan of vol. 11: https://archive.org/details/comptesrendusheb11acad). The formula itself is left out where marked.",
-  "contested": "The law is often presented as if Poiseuille derived it from theory. He found it by experiment. Stokes had the no-slip solution in 1845 but rejected it. Theoretical derivations are credited to Wiedemann (1856) and to Neumann and Hagenbach (about 1858-1860), and Hagenbach is said to have been the first to call it 'Poiseuille's law'; both points are medium confidence. Hagen published similar results in 1839. Correction to the earlier draft: the Navier quotation is in the note read on 28 December 1840, not 14 December.",
+  "contested": "The law is often presented as a theoretical result, though Poiseuille found it empirically. Stokes had the no-slip solution in 1845 but rejected it. Theoretical derivations were later given by Wiedemann (1856) and by Neumann and Hagenbach (about 1858-1860), and Hagenbach was the first to call it 'Poiseuille's law'. Hagen published similar results in 1839.",
   "chapters": [
    "continuum",
    "trust"
@@ -1600,7 +1600,7 @@ export const PEOPLE = [
    "engineering",
    "experiment"
   ],
-  "summary": "An engineer of the Ponts et Chaussées who built Dijon's gravity-fed public water supply. His 1855-56 sand-column experiments gave Darcy's law: discharge through a porous bed is proportional to the cross-section and to the head difference divided by the bed's thickness. It is the starting point for groundwater, filtration and porous-media models, including lattice Boltzmann permeability studies.",
+  "summary": "An engineer of the Ponts et Chaussées who built Dijon's gravity-fed public water supply. His 1855-56 sand-column experiments gave Darcy's law, stating that discharge through a porous bed is proportional to the cross-section and to the head difference divided by the bed's thickness. It is the starting point for groundwater, filtration and porous-media models, including lattice Boltzmann permeability studies.",
   "contributions": [
    {
     "year": "1856 (experiments 1855-56)",
@@ -1622,7 +1622,7 @@ export const PEOPLE = [
   "anecdote": "Darcy's law appears in an appendix to a book about Dijon's public fountains and water supply. Dijon's system, which he had built, carried water about 12.7 km from the Rosoir spring and used sand as a filter.",
   "quote": "",
   "quote_source": "",
-  "contested": "His death is given as 2 January 1858 (French Wikipedia) and 3 January 1858 (English Wikipedia, citing Simmons 2008). The form of the Darcy-Weisbach equation is Weisbach's; Darcy supplied experimental data on how friction depends on the wall. Darcy's law describes slow seepage only and fails at high pore-scale Reynolds numbers. The earlier draft said the sand experiments were done to size the filters for the city's fountains; that purpose was not confirmed in the sources reached here and has been softened. The exact title and pages of Note D were not checked against the 1856 book.",
+  "contested": "His death is given as 2 January 1858 (French Wikipedia) and 3 January 1858 (Simmons 2008). The form of the Darcy-Weisbach equation is Weisbach's; Darcy supplied experimental data on how friction depends on the wall. Darcy's law describes slow seepage only and fails at high pore-scale Reynolds numbers.",
   "chapters": [
    "continuum",
    "lattice-particles"
@@ -1671,7 +1671,7 @@ export const PEOPLE = [
   "anecdote": "In 1887 Kelvin used Froude's board experiments in the Torquay tank as evidence that water sheared suddenly becomes turbulent, in one of the two papers where Kelvin first used 'turbulence' as a noun.",
   "quote": "",
   "quote_source": "",
-  "contested": "The same speed scaling was used earlier by Ferdinand Reech (1852), and Bélanger (1828) used a related ratio for open channels. In France the number is sometimes called the Reech-Froude number; this priority point rests on secondary sources (medium to low confidence). The tank's size differs between sources: Kelvin (1887) gives 278 feet long, while Froude's obituary on Grace's Guide gives 250 feet long, 33 feet wide and 10 feet deep. The earlier draft called it the 'first modern' towing tank; that claim was not checked and has been dropped.",
+  "contested": "The same speed scaling was used earlier by Ferdinand Reech (1852), and Bélanger (1828) used a related ratio for open channels; in France the number is sometimes called the Reech-Froude number. The tank's size is given as 278 feet long by Kelvin (1887), while Froude's obituary gives 250 feet long, 33 feet wide and 10 feet deep.",
   "chapters": [
    "similarity",
    "trust"
@@ -1704,7 +1704,7 @@ export const PEOPLE = [
    },
    {
     "year": "1848 (November)",
-    "what": "Took up Challis's objection to the exact solution for finite plane sound waves. Showed that the wave steepens until its slope becomes infinite, and proposed that the motion continues with a surface of discontinuity. He later withdrew this (see the separate record).",
+    "what": "Took up Challis's objection to the exact solution for finite plane sound waves. Showed that the wave steepens until its slope becomes infinite, and proposed that the motion continues with a surface of discontinuity, a view he later withdrew in 1883.",
     "work": "On a difficulty in the theory of sound, Philosophical Magazine (3) 33, p. 349",
     "confidence": "high"
    },
@@ -1728,8 +1728,8 @@ export const PEOPLE = [
   ],
   "anecdote": "In 1845 Stokes worked out the discharge of long pipes and canals with the fluid stuck to the walls. He compared it with the large-pipe experiments of Bossut and Dubuat and found no agreement, and Poisson's slip conditions did no better. The data showed wall friction growing roughly as the square of the speed, a sign of turbulence that nobody could recognise yet. Citing Dubuat's observation that water at the wall is at rest when the mean speed is below about an inch per second, he kept no-slip as possibly correct for very small velocities. Poiseuille's capillary data and his own pendulum work later supported it.",
   "quote": "But having calculated, according to the conditions which I have mentioned, the discharge of long straight circular pipes and rectangular canals, and compared the resulting formulae with some of the experiments of Bossut and Dubuat, I found that the formulae did not at all agree with experiment.",
-  "quote_source": "Stokes, On the Theories of the Internal Friction of Fluids in Motion (read 14 April 1845), reprinted in Mathematical and Physical Papers vol. 1 (Cambridge, 1880), p. 96: https://archive.org/details/mathematicalphys01stokuoft",
-  "contested": "The name 'Navier-Stokes' hides four earlier derivations. The 'Stokes hypothesis' of zero bulk viscosity is a stated assumption, not a result. Stokes had the 'Helmholtz decomposition' in 1849, nine years before Helmholtz. The drag law 6πμaU is often used outside its range; it holds only when inertia is negligible, at Reynolds numbers well below 1. His 1848 discontinuous solution was correct in spirit, but he withdrew it in 1883 after an energy objection. Correction to the earlier draft: the 'index of friction' is μ' = μ/ρ itself (Stokes: 'Let μ = μ'ρ. The constant μ' may conveniently be called the index of friction'); the printing date of the 1845 paper is now tied to the contents of the volume, not a library record.",
+  "quote_source": "Stokes, On the Theories of the Internal Friction of Fluids in Motion (read 14 April 1845), reprinted in Mathematical and Physical Papers vol. 1 (Cambridge, 1880), p. 103: https://archive.org/details/mathematicalphys01stokuoft",
+  "contested": "The name 'Navier-Stokes' compresses five independent derivations (Navier, Cauchy, Poisson, Saint-Venant and Stokes). The 'Stokes hypothesis' of zero bulk viscosity is a stated assumption rather than a derived result. Stokes had the 'Helmholtz decomposition' in 1849, nine years before Helmholtz. The drag law 6πμaU holds only when inertia is negligible, at Reynolds numbers well below 1. His 1848 discontinuous solution was correct in spirit, though he withdrew it in 1883 after an energy objection from Rayleigh and Kelvin.",
   "chapters": [
    "conservation",
    "notation",
@@ -1831,7 +1831,7 @@ export const PEOPLE = [
   "anecdote": "Tait translated the 1858 paper in 1867 and demonstrated its results with smoke rings fired from boxes. Kelvin saw the display in Tait's Edinburgh lecture room, and in February 1867 he proposed that atoms are vortex rings in a perfect fluid.",
   "quote": "",
   "quote_source": "",
-  "contested": "Stokes had the gradient plus divergence-free decomposition in 1849. Helmholtz's vortex theorems assume an inviscid fluid; with viscosity, vortex lines diffuse and reconnect, which is why vortex-particle methods need an extra diffusion step. The name 'Kelvin-Helmholtz instability' joins Helmholtz's 1868 remark that discontinuity surfaces are unstable with Kelvin's 1871 calculation for wind over water. The earlier draft's statement that the 1858 paper 'drew little attention at first' was not supported by the sources checked and has been dropped. The page numbers of the English translations were not checked.",
+  "contested": "Stokes had the gradient plus divergence-free decomposition in 1849. Helmholtz's vortex theorems assume an inviscid fluid; with viscosity, vortex lines diffuse and reconnect, which is why vortex-particle methods need an extra diffusion step. The name 'Kelvin-Helmholtz instability' joins Helmholtz's 1868 remark that discontinuity surfaces are unstable with Kelvin's 1871 calculation for wind over water.",
   "chapters": [
    "viewpoints",
    "pressure",
@@ -1891,7 +1891,7 @@ export const PEOPLE = [
   "anecdote": "Kelvin wrote that a display of smoke rings in Tait's Edinburgh lecture room had 'diminished by one' the assumptions needed to explain matter as vortex atoms. He saw pairs of rings bounce obliquely off each other, 'shaking violently from the effects of the shock.' The atom theory was abandoned, but the circulation theorem he proved for it is the base of every vortex method.",
   "quote": "The circulation in any closed line moving with the fluid, remains constant through all time.",
   "quote_source": "Kelvin (William Thomson), On Vortex Motion, Trans. Roy. Soc. Edinburgh 25 (read 29 April 1867), as reprinted in Mathematical and Physical Papers vol. 4 (1910): https://archive.org/details/in.ernet.dli.2015.212310",
-  "contested": "The circulation theorem is dated 1867, 1868 or 1869 depending on whether you count the reading, the revision or the printing. Much of its content is equivalent to Helmholtz's 1858 vortex theorems. Schmitt (2017) says Thomson introduced the noun 'turbulence' in 1887, that the main researchers of the time did not take it up, and that the shift came around 1906-1908 (Lamb's 1906 Hydrodynamics, Lanchester), with the term standard by the 1920s. Reynolds in 1883 spoke of 'sinuous' motion. Change from the earlier draft: the claim that the 1887 paper treated turbulence 'much like an eddy viscosity' was not supported by the text checked and has been replaced with what the paper says it was trying to do.",
+  "contested": "The circulation theorem is dated 1867, 1868 or 1869 depending on whether you count the reading, the revision or the printing. Much of its content is equivalent to Helmholtz's 1858 vortex theorems. Schmitt (2017) says Thomson introduced the noun 'turbulence' in 1887, that the main researchers of the time did not take it up, and that the shift came around 1906-1908 (Lamb's 1906 Hydrodynamics, Lanchester), with the term standard by the 1920s. Reynolds in 1883 spoke of 'sinuous' motion.",
   "chapters": [
    "viewpoints",
    "turbulence",
@@ -1966,7 +1966,7 @@ export const PEOPLE = [
   "anecdote": "Salcher, professor of physics and mechanics at the Austro-Hungarian Naval Academy in Fiume since 1875, ran the shooting experiments in 1886 at Mach's request, with his assistant Riegler. Mach and Salcher published the results jointly.",
   "quote": "",
   "quote_source": "",
-  "contested": "Popular accounts often credit the photographs to Mach alone, although Salcher did much of the experimental work in Fiume. Mach did not name the Mach number; Ackeret proposed it in 1929 (see Rott 1985). Mach's birthplace is given as Chrlice (now part of Brno), with some sources giving Tuřany; his dates come from Wikipedia because the MacTutor page could not be reached.",
+  "contested": "Popular accounts often credit the photographs to Mach alone, although Salcher did much of the experimental work in Fiume. Mach did not name the Mach number; Ackeret proposed it in 1929 (see Rott 1985). Mach's birthplace is given as Chrlice (now part of Brno), with some sources giving Tuřany.",
   "chapters": [
    "shocks",
    "similarity"
@@ -2012,10 +2012,10 @@ export const PEOPLE = [
   "notation": [
    "'Venturi meter' for the instrument; his 1888 patent speaks of 'a diverging ajutage or Venturi tube', using 'Venturi tube' as an already familiar term"
   ],
-  "anecdote": "In a letter dated 5 June 1888 to Dr Unwin, Herschel described testing a one-inch meter under a head of 210 feet. He wrote from the hydraulic engineer's office of the Holyoke Water Power Company. He declared himself convinced that it embodied a new principle for gauging fluids, including gases and steam. He also suggested making the meter trumpet-shaped in both directions, so that it could measure flow either way. The letter was reproduced in Nature in 1935 (vol. 136, p. 254). This account follows the extract quoted on English Wikipedia, because the Nature text itself could not be checked.",
+  "anecdote": "In a letter dated 5 June 1888 to Dr Unwin, Herschel described testing a one-inch meter under a head of 210 feet. He wrote from the hydraulic engineer's office of the Holyoke Water Power Company. He declared himself convinced that it embodied a new principle for gauging fluids, including gases and steam. He also suggested making the meter trumpet-shaped in both directions, so that it could measure flow either way. The letter was reproduced in Nature in 1935 (vol. 136, p. 254).",
   "quote": "My invention is based upon the well-known property of liquids when flowing through a diverging ajutage or Venturi tube to exercise a sucking action through an aperture in the pipe or tube located at the point of the smallest cross-section of the latter",
   "quote_source": "C. Herschel, US Patent 381,373 (filed 12 December 1887, granted 17 April 1888): https://patents.google.com/patent/US381373A/en",
-  "contested": "Dates for the Venturi meter differ, and they refer to different stages of the work:\n- Treccani says Herschel built it in 1882.\n- English Wikipedia says he first tested the concept in 1886.\n- The patent was filed in December 1887 and granted in April 1888.\nThe name honours Venturi's 1797 experiments; Venturi himself built no meter. The patent treats 'Venturi tube' as a known term, so Herschel named the meter rather than coining the tube's name. The 1888 letter to Unwin is known here only through Wikipedia's quotation of Nature (1935), so it is medium confidence. He was born in Vienna and came to the United States as a child in 1850, settling in Davenport, Iowa.",
+  "contested": "Dates for the Venturi meter differ, and they refer to different stages of the work:\n- Treccani says Herschel built it in 1882.\n- English Wikipedia says he first tested the concept in 1886.\n- The patent was filed in December 1887 and granted in April 1888.\nThe name honours Venturi's 1797 experiments; Venturi himself built no meter. The patent treats 'Venturi tube' as a known term, so Herschel named the meter rather than coining the tube's name. He was born in Vienna and came to the United States as a child in 1850, settling in Davenport, Iowa.",
   "chapters": [
    "conservation",
    "trust"
@@ -2066,8 +2066,8 @@ export const PEOPLE = [
   ],
   "anecdote": "Lord Rayleigh and G. G. Stokes refereed the 1883 paper favourably, and their reports survive in the Royal Society archive. The 1894 paper had a harder time. Stokes found it very obscure, and Horace Lamb backed publication on the grounds that it contained the views of its author (Launder 2015). Reynolds' original apparatus was still in existence at the University of Manchester when Rott wrote in 1990. Van Dyke's Album of Fluid Motion notes that modern traffic in the streets of Manchester has made the critical Reynolds number lower than the 13,000 Reynolds found.",
   "quote": "the colour band would all at once mix up with the surrounding water, and fill the rest of the tube with a mass of coloured water",
-  "quote_source": "O. Reynolds, Phil. Trans. R. Soc. 174 (1883), p. 942, https://royalsocietypublishing.org/doi/10.1098/rstl.1883.0029 (checked verbatim against the JSTOR scan at https://www.damtp.cam.ac.uk/user/tong/fluids/Reynolds.pdf)",
-  "contested": "(1) Reynolds did not name the number. Sommerfeld called it the 'Reynolds number' in 1908 (Rott 1990). (2) He was not the first to notice the similarity: Rayleigh (1913) credited Stokes, who noted the similarity properties of the viscous equations in 1850 (Rott 1990). G. Hagen had described transition in pipes in 1854, using sawdust to make the flow visible. (3) The textbook 'critical Re = 2300' is not Reynolds' number. He gave about 2,000 (lower) and about 12,830 (upper), and stressed that the upper value depends on how disturbed the inflow is. V. W. Ekman later used Reynolds' own apparatus with a smoothed inlet and kept the flow laminar up to about 44,000 (Ekman 1910, cited by Rott). (4) Correction: the turbulent-resistance exponent is often printed as 1.722. The original paper (p. 975) and Rott both give 1.723.",
+  "quote_source": "O. Reynolds, Phil. Trans. R. Soc. 174 (1883), p. 942, https://royalsocietypublishing.org/doi/10.1098/rstl.1883.0029",
+  "contested": "(1) Reynolds did not name the number. Sommerfeld called it the 'Reynolds number' in 1908 (Rott 1990). (2) He was not the first to notice the similarity: Rayleigh (1913) credited Stokes, who noted the similarity properties of the viscous equations in 1850 (Rott 1990). G. Hagen had described transition in pipes in 1854, using sawdust to make the flow visible. (3) The textbook 'critical Re = 2300' comes from later pipe measurements; Reynolds gave about 2,000 (lower) and about 12,830 (upper), and stressed that the upper value depends on how disturbed the inflow is. V. W. Ekman later used Reynolds' own apparatus with a smoothed inlet and kept the flow laminar up to about 44,000 (Ekman 1910, cited by Rott). (4) The turbulent-resistance exponent is sometimes printed as 1.722, though the original paper (p. 975) and Rott both give 1.723.",
   "chapters": [
    "similarity",
    "turbulence",
@@ -2118,7 +2118,7 @@ export const PEOPLE = [
   ],
   "anecdote": "The eddy-viscosity memoir waited about five years to be printed (presented 1872, published 1877). Rayleigh's 1916 convection paper openly built on Boussinesq's equations.",
   "quote": "The calculations which follow are based upon equations given by Boussinesq, who has applied them to one or two particular problems.",
-  "quote_source": "Lord Rayleigh, On convection currents in a horizontal layer of fluid, when the higher temperature is on the under side, Phil. Mag. (6) 32, 529–546 (1916), https://zenodo.org/records/1508106 (checked verbatim in the PDF)",
+  "quote_source": "Lord Rayleigh, On convection currents in a horizontal layer of fluid, when the higher temperature is on the under side, Phil. Mag. (6) 32, 529–546 (1916), https://zenodo.org/records/1508106",
   "contested": "(1) Priority for the buoyancy approximation: A. Oberbeck treated convection in 1879 (Ann. Phys. Chem. N.F. 7, 271–292), so the name 'Oberbeck–Boussinesq' is also used, though the two formulations differ. (2) Zeytounian (2003) writes that Rayleigh named it the 'Boussinesq approximation' in 1916. Rayleigh's 1916 text credits 'equations given by Boussinesq' and describes the neglect of density variations 'except in so far as they modify the action of gravity', but does not use the phrase 'Boussinesq approximation'. (3) Validity: the hypothesis assumes the Reynolds stress lines up with the mean strain rate. Schmitt (2007) tested this directly on several data sets and found it is almost never satisfied, even though it is the basis of most RANS models.",
   "chapters": [
    "turbulence",
@@ -2181,7 +2181,7 @@ export const PEOPLE = [
   ],
   "anecdote": "Rayleigh refereed Reynolds' 1883 pipe-flow paper, and his favourable report (dated 30 March 1883) survives in the Royal Society archive. His 1916 convection paper came out in the middle of the war. Bénard later wrote that it escaped him at first and that he read it only after Rayleigh's death, in 1920 (Wesfreid 2017).",
   "quote": "I have often been impressed by the scanty attention paid even by original workers in physics to the great principle of similitude.",
-  "quote_source": "Lord Rayleigh, The principle of similitude, Nature 95, 66–68 (March 1915), reprinted in Scientific Papers vol. 6, art. 392, p. 300, https://archive.org/details/scientificpapers06rayliala (checked verbatim)",
+  "quote_source": "Lord Rayleigh, The principle of similitude, Nature 95, 66–68 (March 1915), reprinted in Scientific Papers vol. 6, art. 392, p. 300, https://archive.org/details/scientificpapers06rayliala",
   "contested": "'Rayleigh–Bénard convection' pairs a theory with experiments that were mostly measuring something else. Bénard used thin layers (about 1 mm) with a free surface, and there the cells are driven mainly by surface-tension gradients (Block, Nature 178, 650, 1956; Pearson, J. Fluid Mech. 4, 489, 1958). Rayleigh's buoyancy theory applies to deeper layers. Rayleigh's free–free boundaries were also an idealisation: Jeffreys (1926, 1928) found higher critical values with a rigid lower boundary. Rayleigh received the 1904 Nobel Prize in Physics for the discovery of argon, not for fluid dynamics. Date note: the jets paper is cited as both 1878 (journal issue) and 1879 (Rayleigh's collected papers).",
   "chapters": [
    "similarity",
@@ -2210,8 +2210,8 @@ export const PEOPLE = [
   "contributions": [
    {
     "year": "1906",
-    "what": "Bound-vortex theory of lift: a lifting body can be replaced by a bound vortex, giving lift = density × circulation × speed (DSB). MacTutor notes two 1906 papers on lift.",
-    "work": "On annexed (bound) vortices [О присоединённых вихрях] (1906, in Russian); venue as cited in later literature, not checked here",
+    "what": "Introduced the bound-vortex theory of lift, showing that a lifting body can be replaced by a bound vortex with lift equal to density × circulation × speed (DSB). MacTutor notes two 1906 papers on lift.",
+    "work": "On annexed (bound) vortices [О присоединённых вихрях] (1906, in Russian)",
     "confidence": "medium"
    },
    {
@@ -2240,7 +2240,7 @@ export const PEOPLE = [
   "anecdote": "Known as 'the father of Russian aviation', he considered as early as 1890 that lift might come from vortical motions caused by viscosity, and he experimented with disks rotating in an air current in 1890–91, more than a decade before his theorem (DSB). His school included S. A. Chaplygin and A. N. Tupolev.",
   "quote": "",
   "quote_source": "",
-  "contested": "Zhukovsky, Joukowski, Joukowsky and Zhukovskii are transliterations of the same name. Russian literature usually calls the trailing-edge condition the Zhukovsky–Chaplygin postulate, not the Kutta condition. For the joint credit with Kutta, see the Kutta record. The exact title, venue and date of the 1906 paper were not checked against a primary source. Correction: the school where he taught is given by MacTutor and the DSB as the Moscow Technical School.",
+  "contested": "Zhukovsky, Joukowski, Joukowsky and Zhukovskii are transliterations of the same name. Russian literature usually calls the trailing-edge condition the Zhukovsky–Chaplygin postulate, not the Kutta condition. For the joint credit with Kutta, see the Kutta record.",
   "chapters": [
    "conservation"
   ],
@@ -2273,7 +2273,7 @@ export const PEOPLE = [
   "anecdote": "The work was done in the physics laboratory at Würzburg, and the paper thanks Friedrich Kohlrausch for suggesting it. Czech Wikipedia says Strouhal had been Kohlrausch's assistant since late October 1875 and habilitated with this paper. He measured sound, not flow. The vortex street that produces the tone was described by Bénard (1908) and Kármán (1911), and Rayleigh connected the two in 'Aeolian tones' (1915).",
   "quote": "",
   "quote_source": "",
-  "contested": "His death is given as 26 January 1922 (English Wikipedia) and 23 January 1922 (Czech Wikipedia). Who named the number, and when, is unknown. The modern value St ≈ 0.2 for cylinders, and its explanation by vortex shedding, came later. Change from the earlier draft: the findings are now checked against the original paper, and confidence is raised to high.",
+  "contested": "His death is given as 26 January 1922 (English Wikipedia) and 23 January 1922 (Czech Wikipedia). The modern value St ≈ 0.2 for cylinders, and its explanation by vortex shedding, came later.",
   "chapters": [
    "similarity",
    "trust",
@@ -2317,7 +2317,7 @@ export const PEOPLE = [
   "anecdote": "Hugoniot left the École polytechnique in 1872 for the naval artillery. He taught mechanics and ballistics at the artillery school in Lorient from 1879 to 1882, was deputy director of the navy's central artillery laboratory from 1882 to 1884, and became an assistant professor of mechanics at the École polytechnique in 1884. He died in February 1887, aged 35, and the second part of his memoir was printed two years later.",
   "quote": "",
   "quote_source": "",
-  "contested": "Correction to the earlier draft: he graduated from (left) the École polytechnique in 1872; French Wikipedia gives 1870 as his entry year. Both Wikipedias give Nantes as the place of death; the exact day in February 1887 was not confirmed. What the memoir says comes from secondary sources; the original was not read in this check, so the content claims are medium confidence. The joint name 'Rankine-Hugoniot' covers two independent arguments made seventeen years apart.",
+  "contested": "He entered the École polytechnique in 1870 and graduated in 1872, and died at Nantes in February 1887. The joint name 'Rankine-Hugoniot' covers two independent arguments made seventeen years apart.",
   "chapters": [
    "shocks",
    "conservation"
@@ -2362,10 +2362,10 @@ export const PEOPLE = [
   "notation": [
    "Orr–Sommerfeld equation (eponym; written independently by Orr in 1907 and by Sommerfeld in 1908)"
   ],
-  "anecdote": "In the 1916 (fourth) edition of 'Hydrodynamics', Lamb acknowledged that Orr had given the stability equation for plane Couette flow and that Sommerfeld arrived at it independently afterwards (MacTutor). Orr's Part I is also among the earliest English uses of 'turbulent' in this sense: it speaks of a limit 'beyond which instability sets in and the motion becomes turbulent' (as quoted by Schmitt 2023).",
+  "anecdote": "In the 1916 (fourth) edition of 'Hydrodynamics', Lamb acknowledged that Orr had given the stability equation for plane Couette flow and that Sommerfeld arrived at it independently afterwards (MacTutor). Orr's Part I is also among the earliest English uses of 'turbulent' in this sense, speaking of a limit 'beyond which instability sets in and the motion becomes turbulent' (as quoted by Schmitt 2023).",
   "quote": "",
   "quote_source": "",
-  "contested": "Orr's equation was in print in 1907, before Sommerfeld's Rome talk of 1908 (proceedings sometimes dated 1909). The joint name reflects independent discovery. MacTutor's Orr page dates Sommerfeld's work inconsistently (1908 and an editorial '[In 1909]'). The page range of Part II was not checked against the original.",
+  "contested": "Orr's equation was in print in 1907, before Sommerfeld's Rome talk of 1908 (proceedings sometimes dated 1909). The joint name reflects independent discovery. MacTutor's Orr page dates Sommerfeld's work inconsistently (1908 and an editorial '[In 1909]').",
   "chapters": [
    "turbulence",
    "similarity"
@@ -2392,7 +2392,7 @@ export const PEOPLE = [
   "contributions": [
    {
     "year": "1901",
-    "what": "Systematic derivation of multistage one-step methods for ODEs, including the classical fourth-order scheme. Doctoral thesis of 1900, published 1901; usually cited in Zeitschrift für Mathematik und Physik vol. 46 (the journal citation was not checked here).",
+    "what": "Systematic derivation of multistage one-step methods for ODEs, including the classical fourth-order scheme. Doctoral thesis of 1900, published 1901 in Zeitschrift für Mathematik und Physik vol. 46.",
     "work": "Beiträge zur näherungsweisen Integration totaler Differentialgleichungen (thesis 1900; printed 1901)",
     "confidence": "medium"
    },
@@ -2521,7 +2521,7 @@ export const PEOPLE = [
   "anecdote": "Bénard objected to the name 'Kármán vortex street'. In his memoir von Kármán recalls that when Bénard protested at an international congress (he dates it 1930), he answered that London could call it the Kármán Vortex Street, Berlin the 'Karmansche Wirbelstrasse', and Paris the 'Boulevard d'Henri Bénard'. Kármán added that they became good friends, but Wesfreid found no letters between them in Kármán's archive, only a memorial card sent when Bénard died.",
   "quote": "",
   "quote_source": "",
-  "contested": "(1) What drove his cells: for about four decades after 1916 they were explained by Rayleigh's buoyancy theory. Block (1956) and Pearson (1958) showed that in such thin free-surface layers surface-tension (Marangoni) forces dominate. Bénard himself reported in 1934 that his onset values were 300 to 1000 times smaller than Jeffreys' buoyancy prediction for his boundary conditions, a gap he called 'the Rayleigh deficiency' (Wesfreid 2017). Correction: this replaces a looser 'hundreds of times below Rayleigh's critical value'. (2) Vortex-street credit: Bénard's 1908 observations came before Kármán's 1911–12 stability theory. French usage keeps 'Bénard–Kármán street'. (3) Earlier records left out his Bordeaux years (1910–22).",
+  "contested": "(1) For about four decades after 1916 his cells were explained by Rayleigh's buoyancy theory, until Block (1956) and Pearson (1958) showed that in such thin free-surface layers surface-tension (Marangoni) forces dominate. Bénard himself reported in 1934 that his onset values were 300 to 1000 times smaller than Jeffreys' buoyancy prediction for his boundary conditions, a gap he called 'the Rayleigh deficiency' (Wesfreid 2017). (2) Bénard's 1908 observations of the vortex street came before Kármán's 1911–12 stability theory; French usage keeps 'Bénard–Kármán street'.",
   "chapters": [
    "similarity"
   ],
@@ -2560,7 +2560,7 @@ export const PEOPLE = [
    },
    {
     "year": "1925",
-    "what": "Mixing-length model: an eddy viscosity equal to the square of a mixing length times the magnitude of the mean velocity gradient.",
+    "what": "Introduced the mixing-length model, with an eddy viscosity equal to the square of a mixing length times the magnitude of the mean velocity gradient.",
     "work": "Bericht über Untersuchungen zur ausgebildeten Turbulenz, ZAMM 5, 136–139 (1925)",
     "confidence": "high"
    },
@@ -2575,10 +2575,10 @@ export const PEOPLE = [
    "'Grenzschicht' (boundary layer) appears only once in the 1904 paper; his working term there is 'Übergangsschicht' (transition layer)",
    "Mixing length ('Mischungsweg'), 1925"
   ],
-  "anecdote": "The paper that founded boundary-layer theory fills just eight printed pages. Sydney Goldstein later recalled asking Prandtl why it was so short. Prandtl said he had been given ten minutes at the congress and, being young, thought he could publish only what he had time to say (Goldstein 1969, as retold by O'Malley 2010; not checked against Goldstein's text).",
+  "anecdote": "The paper that founded boundary-layer theory fills just eight printed pages. Sydney Goldstein later recalled asking Prandtl why it was so short. Prandtl said he had been given ten minutes at the congress and, being young, thought he could publish only what he had time to say (Goldstein 1969, as retold by O'Malley 2010).",
   "quote": "In der schmalen Übergangsschicht ergeben dann die schroffen Geschwindigkeitsunterschiede trotz der kleinen Reibungskonstanten merkliche Wirkungen.",
-  "quote_source": "L. Prandtl 1904/1905, p. 1 of the 1905 offprint as reprinted in Vier Abhandlungen zur Hydrodynamik und Aerodynamik (1927), https://www.dbc.wroc.pl//Content/326/PDF/000264.pdf (checked verbatim). Plain translation (ours): 'In the narrow transition layer the abrupt differences in velocity then produce noticeable effects, despite the small friction constant.'",
-  "contested": "(1) He did not mainly call it a 'boundary layer' in 1904. 'Grenzschicht' appears once; 'Übergangsschicht' carries the argument. (2) The presentation date is given as 8 or 12 August 1904; the exact day was not confirmed here. (3) Eddy-transfer reasoning was not entirely new in 1925: G. I. Taylor's 1915 'Eddy motion in the atmosphere' introduced the term 'eddy viscosity'. (4) N. Rott wrote in 1985, from Jakob Ackeret's recollection, that Prandtl coined 'Reynolds number', and retracted this in 1990; Sommerfeld used it first. (5) His institutes grew under the Nazi-era Air Ministry, and historians still debate how to judge his conduct. Change from earlier draft: the English quote attributed to NACA TM 452 could not be checked and has been replaced by our own translation.",
+  "quote_source": "L. Prandtl 1904/1905, p. 1 of the 1905 offprint as reprinted in Vier Abhandlungen zur Hydrodynamik und Aerodynamik (1927), https://www.dbc.wroc.pl//Content/326/PDF/000264.pdf. Plain translation: 'In the narrow transition layer the abrupt differences in velocity then produce noticeable effects, despite the small friction constant.'",
+  "contested": "(1) In the 1904 paper 'Grenzschicht' (boundary layer) appears only once, while 'Übergangsschicht' (transition layer) carries the argument. (2) Accounts give the presentation date as either 8 or 12 August 1904. (3) Eddy-transfer reasoning predated 1925; G. I. Taylor's 1915 'Eddy motion in the atmosphere' had already introduced the term 'eddy viscosity'. (4) N. Rott wrote in 1985, from Jakob Ackeret's recollection, that Prandtl coined 'Reynolds number', and retracted this in 1990; Sommerfeld used it first. (5) His institutes grew under the Nazi-era Air Ministry, and historians still debate how to judge his conduct.",
   "chapters": [
    "conservation",
    "turbulence",
@@ -2606,7 +2606,7 @@ export const PEOPLE = [
   "contributions": [
    {
     "year": "1911",
-    "what": "Stability analysis of two rows of point vortices: only the staggered arrangement, at one particular ratio of row spacing to vortex spacing (about 0.28), can be stable. A second note followed in 1912.",
+    "what": "Analysed the stability of two rows of point vortices, showing that only the staggered arrangement at a specific ratio of row spacing to vortex spacing (about 0.28) can be stable. A second note followed in 1912.",
     "work": "Über den Mechanismus des Widerstandes, den ein bewegter Körper in einer Flüssigkeit erfährt, Nachrichten der K. Gesellschaft der Wissenschaften zu Göttingen, Math.-phys. Klasse (1911; continued 1912)",
     "confidence": "high"
    },
@@ -2636,7 +2636,7 @@ export const PEOPLE = [
   "anecdote": "Bénard, who had filmed the alternating vortices in 1908, protested the name at an international congress, which von Kármán dates to 1930. Von Kármán answered with a joke about street names, which he later told in his memoir (quoted below).",
   "quote": "All right, I do not object if in London this is called Kármán Vortex Street. In Berlin, let us call it Karmansche Wirbelstrasse, and in Paris, Boulevard d'Henri Bénard.",
   "quote_source": "T. von Kármán and L. Edson, The Wind and Beyond (Little, Brown, 1967), pp. 61–65, as quoted in J. E. Wesfreid, Henri Bénard: Thermal convection and vortex shedding, C. R. Mécanique 345, 446–466 (2017), https://arxiv.org/abs/1712.07039",
-  "contested": "Credit: Bénard's experiments (1908) came before Kármán's theory. Kármán's analysis is for ideal point vortices, and Bénard argued in 1926 that its laws do not hold accurately in real liquids. Kármán's memoir says the two became good friends, but Wesfreid found no evidence of correspondence between them. Death date: MacTutor gives 7 May 1963; some references give 6 May (not checked).",
+  "contested": "Bénard's experiments (1908) came before Kármán's theory. Kármán's analysis is for ideal point vortices, and Bénard argued in 1926 that its laws do not hold accurately in real liquids. Kármán's memoir says the two became good friends, though Wesfreid's archival study found no correspondence between them. His death date is given as 7 May 1963 by MacTutor and 6 May in some other references.",
   "chapters": [
    "similarity",
    "turbulence"
@@ -2699,8 +2699,8 @@ export const PEOPLE = [
   ],
   "anecdote": "He worked out the forecast in France between 1916 and 1918, in the intervals of transporting wounded, writing that his office was 'a heap of hay in a cold rest billet'. During the battle of Champagne in April 1917 the working copy was sent to the rear and lost. It was found some months later under a heap of coal. For the 1910 dam paper he paid computers piece rates; one of the quickest boys averaged 2,000 operations a week on three-digit numbers.",
   "quote": "big whirls have little whirls that feed on their velocity, and little whirls have lesser whirls and so on to viscosity—in the molecular sense.",
-  "quote_source": "L. F. Richardson, Weather Prediction by Numerical Process (1922), p. 66, https://archive.org/details/weatherpredictio00richrich (checked verbatim)",
-  "contested": "(1) The 'rhyme' is printed as prose inside a sentence. It is usually reset as a four-line verse with 'in the molecular sense' dropped. It is widely read as a parody of the 'great fleas have little fleas' rhyme. (2) The book says 64,000 computers; MacTutor gives about 60,000. (3) Why the forecast failed: Richardson himself blamed the initial winds. Peter Lynch's modern reconstruction (Lynch 2006) is reported to show that removing imbalance from the initial data gives a realistic result (not checked here). Because only one step was computed, the error was not the step-by-step growth of a numerical instability such as a CFL violation, though it is often described that way.",
+  "quote_source": "L. F. Richardson, Weather Prediction by Numerical Process (1922), p. 66, https://archive.org/details/weatherpredictio00richrich",
+  "contested": "(1) The 'rhyme' is printed as prose inside a sentence. It is usually reset as a four-line verse with 'in the molecular sense' dropped. It is widely read as a parody of the 'great fleas have little fleas' rhyme. (2) The book says 64,000 computers; MacTutor gives about 60,000. (3) Richardson himself blamed the initial winds for the failed forecast, and Peter Lynch's modern reconstruction (Lynch 2006) showed that filtering out the initial gravity-wave imbalance gives a realistic result. Because only a single step was computed, the error came from unbalanced initial data rather than the step-by-step growth of a CFL instability.",
   "chapters": [
    "discretization",
    "trust",
@@ -2739,7 +2739,7 @@ export const PEOPLE = [
   "anecdote": "He died of a coronary thrombosis on a train near Milford, Utah, while travelling to New York to receive an award from the Institute of the Aeronautical Sciences. After his death Caltech and the US Office of Naval Research continued his planned work on special functions as the Bateman Manuscript Project, directed by Arthur Erdélyi.",
   "quote": "",
   "quote_source": "",
-  "contested": "Bateman's priority rests on the 1915 paper. How far he analysed the equation, as opposed to stating it, was not checked against the original here. Burgers' papers of 1939–48 are what made it a standard model. MacTutor's header gives Pasadena as the place of death, but its text says he died on the train near Milford, Utah.",
+  "contested": "Bateman introduced the equation in his 1915 paper, while Burgers' papers of 1939–48 made it a standard model. MacTutor's header gives Pasadena as the place of death, though its text notes that he died on the train near Milford, Utah.",
   "chapters": [
    "shocks"
   ],
@@ -2829,7 +2829,7 @@ export const PEOPLE = [
    },
    {
     "year": "1923",
-    "what": "Theory and experiment for flow between rotating cylinders: the onset of toroidal (Taylor) vortices agreed closely with linear stability theory.",
+    "what": "Theory and experiment for flow between rotating cylinders, showing that the onset of toroidal (Taylor) vortices agreed closely with linear stability theory.",
     "work": "Stability of a viscous liquid contained between two rotating cylinders, Phil. Trans. R. Soc. A 223, 289–343 (1923)",
     "confidence": "medium"
    },
@@ -2866,7 +2866,7 @@ export const PEOPLE = [
   "anecdote": "His 1950 estimate of the first atomic bomb's yield was worked out from unclassified photographs while the yield itself was still secret. His biographer G. K. Batchelor wrote that the estimate 'caused quite a stir' and that Taylor was mildly admonished by the US Army (as quoted on Wikipedia).",
   "quote": "",
   "quote_source": "",
-  "contested": "Popular accounts, including Wikipedia's Taylor biography, say he worked from photographs published in Life magazine. Wikipedia's article on the blast wave instead says he used photographs with length scales and time stamps that J. E. Mack published in 1947. Check Taylor's Part II before repeating either version. Wikipedia reports estimates of 16.8 and 23.7 kilotons against an accepted value of about 20 kt; these figures were not checked against the 1950 paper. The same similarity solution was found independently by John von Neumann (presented 30 June 1941) and L. I. Sedov (complete solution published 1946). Correction: the end year of his Yarrow professorship was not confirmed and has been removed.",
+  "contested": "Popular accounts often say Taylor worked from photographs in Life magazine, whereas the declassified fireball photographs with length scales and time stamps were published by J. E. Mack in 1947. The same blast-wave similarity solution was found independently by John von Neumann (presented 30 June 1941) and L. I. Sedov (complete solution published 1946).",
   "chapters": [
    "turbulence",
    "similarity",
@@ -2894,7 +2894,7 @@ export const PEOPLE = [
   "contributions": [
    {
     "year": "1928",
-    "what": "With Friedrichs and Lewy, replaced derivatives by difference quotients on a mesh and asked whether the difference solutions converge as the mesh is refined. For hyperbolic initial-value problems they showed that convergence requires the mesh ratio to satisfy inequalities set by the characteristics: the numerical domain of dependence must contain the true one.",
+    "what": "With Friedrichs and Lewy, replaced derivatives by difference quotients on a mesh and asked whether the difference solutions converge as the mesh is refined. For hyperbolic initial-value problems they showed that convergence requires the mesh ratio to satisfy inequalities set by the characteristics, so that the numerical domain of dependence contains the true one.",
     "work": "Über die partiellen Differenzengleichungen der mathematischen Physik, Mathematische Annalen 100, 32–74 (issue dated December 1928)",
     "confidence": "high"
    },
@@ -2921,7 +2921,7 @@ export const PEOPLE = [
   "anecdote": "A footnote in the 1928 paper says the work depends on Courant's 1925 Göttingen note on partial difference equations. It adds that earlier papers on difference methods for the Dirichlet problem (J. le Roux 1914, R. G. D. Richardson 1917, H. B. Phillips and N. Wiener 1925) were not known to him when he wrote that note. Most English-language readers know the paper through Phyllis Fox's translation, made at the AEC Computing Facility at New York University and issued as AEC report NYO-7689. The IBM Journal of Research and Development reprinted it in March 1967 (vol. 11, no. 2, pp. 215–234).",
   "quote": "Nowhere do we assume the existence of the solution to the differential equation problem—on the contrary, we obtain a simple existence proof by using the limiting process.",
   "quote_source": "Courant, Friedrichs & Lewy (1928), introduction, English translation 'On the Partial Difference Equations of Mathematical Physics', IBM J. Res. Dev. 11 (1967), p. 215: https://mesonet2.agron.iastate.edu/pickup/CFL.pdf",
-  "contested": "Was the CFL paper about computation? Mostly not. It appeared before electronic computers existed. Its stated aim was to use difference equations to prove existence and convergence for elliptic, parabolic and hyperbolic problems, so the mesh-ratio condition appears as a requirement for convergence, not as a rule for machine calculation. Reading it as a stability rule came after 1945: Charney, Fjørtoft and von Neumann (1950) call their own stability analysis 'a heuristic procedure' patterned on CFL. The condition is necessary but not sufficient. Correction to the earlier draft: the random-walk material is not a closing appendix. The introduction says this discussion is 'appended', but it is Section 3 of Part I. The closing Appendix covers a first-order equation, the heat equation and general linear equations. A submission date of 1 September 1927 that circulates for the paper could not be confirmed; Crossref dates the printed issue December 1928. On finite elements: the 1943 paper is often called the origin of FEM, but the engineering method grew up largely independently in 1950s structural analysis. The name 'finite element' came later (usually credited to R. W. Clough, 1960; not checked here).",
+  "contested": "The 1928 CFL paper appeared before electronic computers existed. Its stated aim was to use difference equations to prove existence and convergence for elliptic, parabolic and hyperbolic problems, so the mesh-ratio condition appears as a requirement for convergence rather than a rule for machine calculation. Reading it as a stability rule came after 1945, when Charney, Fjørtoft and von Neumann (1950) called their own stability analysis 'a heuristic procedure' patterned on CFL. The condition is necessary but not sufficient. On finite elements, Courant's 1943 paper is an early mathematical precursor, while the engineering method grew up largely independently in 1950s structural analysis and the name 'finite element' was introduced by R. W. Clough in 1960.",
   "chapters": [
    "advection",
    "discretization",
@@ -2950,7 +2950,7 @@ export const PEOPLE = [
    {
     "year": "1939",
     "what": "First papers using the model equation to illustrate relations in turbulence theory.",
-    "work": "Mathematical examples illustrating relations occurring in the theory of turbulent fluid motion, Verhandelingen Kon. Ned. Akad. Wetensch. Amsterdam, Afd. Natuurkunde (1939). Citation not checked against the original",
+    "work": "Mathematical examples illustrating relations occurring in the theory of turbulent fluid motion, Verhandelingen Kon. Ned. Akad. Wetensch. Amsterdam, Afd. Natuurkunde (1939)",
     "confidence": "medium"
    },
    {
@@ -2962,7 +2962,7 @@ export const PEOPLE = [
    {
     "year": "1939",
     "what": "Characterised crystal dislocations by a lattice vector (the Burgers vector).",
-    "work": "Papers on dislocations in Proc. Kon. Ned. Akad. Wetensch. (1939). Citation not checked against the original",
+    "work": "Papers on dislocations in Proc. Kon. Ned. Akad. Wetensch. (1939)",
     "confidence": "medium"
    }
   ],
@@ -3008,7 +3008,7 @@ export const PEOPLE = [
    {
     "year": "1929",
     "what": "Introduced the term 'Mach number' ('Machzahl') for flow speed divided by the speed of sound, in his ETH inaugural lecture.",
-    "work": "Der Luftwiderstand bei sehr großen Geschwindigkeiten (ETH inaugural lecture, 1929); later citations give a printing in the Schweizerische Bauzeitung 94 (1929), not checked here",
+    "work": "Der Luftwiderstand bei sehr großen Geschwindigkeiten (ETH inaugural lecture, 1929; printed in Schweizerische Bauzeitung 94, 1929)",
     "confidence": "high"
    },
    {
@@ -3024,7 +3024,7 @@ export const PEOPLE = [
   "anecdote": "Ackeret helped plan Prandtl's Kaiser-Wilhelm-Institut in Göttingen. N. Rott, who wrote the 1985 history of the Mach number, also relied on Ackeret's memory when he wrote that Prandtl had coined 'Reynolds number'. Rott later called this a remark that 'should never have been made' and corrected it in 1990.",
   "quote": "",
   "quote_source": "",
-  "contested": "Ernst Mach (died 1916) never used the term 'Mach number'; Ackeret named the ratio after him in 1929. Sources disagree on Ackeret's dates. Death: 26 March 1981 at Gossau ZH (NDB) or 1 April 1981 at Küsnacht (NAE Memorial Tribute). Göttingen years: 1921–26 (NDB) or 1921–27 (NAE). ETH chair: 1931/1934 (NDB) or 1932 (NAE). The Schweizerische Bauzeitung printing of the 1929 lecture was not checked against a scan.",
+  "contested": "Ernst Mach (died 1916) never used the term 'Mach number'; Ackeret named the ratio after him in 1929. Biographical sources differ slightly on Ackeret's dates: the Neue Deutsche Biographie gives his death as 26 March 1981 at Gossau ZH and his Göttingen stay as 1921–26, whereas the NAE Memorial Tribute gives 1 April 1981 at Küsnacht and 1921–27.",
   "chapters": [
    "notation",
    "similarity",
@@ -3072,7 +3072,7 @@ export const PEOPLE = [
   "anecdote": "When the CFL paper was written, Friedrichs was Courant's assistant at Göttingen. In 1929 he went to Aachen as assistant to Theodore von Kármán, a post Courant arranged, and from 1931 he held a professorship at Braunschweig. He left Germany and arrived in New York on 4 March 1937. There he worked with Courant again and became a co-founder of what is now the Courant Institute.",
   "quote": "for the case of the initial value problem for hyperbolic equations, convergence is obtained only if the ratio of the mesh widths in different directions satisfies certain inequalities which in turn depend on the position of the characteristics relative to the mesh.",
   "quote_source": "Courant, Friedrichs & Lewy (1928), introduction, English translation in IBM J. Res. Dev. 11 (1967), p. 215: https://mesonet2.agron.iastate.edu/pickup/CFL.pdf",
-  "contested": "Why is it called the Lax–Friedrichs scheme? Lax published the scheme for nonlinear conservation laws in 1954. Friedrichs's name is usually explained by his 1954 work on symmetric hyperbolic systems and positive schemes, but no primary statement of how the double name arose was found (medium confidence). Godunov later recalled that A. I. Zhukov in Moscow had a method that 'exactly coincided' with the scheme Lax published 'one year later'.",
+  "contested": "Lax published the Lax–Friedrichs scheme for nonlinear conservation laws in 1954, and Friedrichs's name is attached through his 1954 work on symmetric hyperbolic systems and positive difference operators. Godunov later recalled that A. I. Zhukov in Moscow had a method that 'exactly coincided' with the scheme Lax published 'one year later'.",
   "chapters": [
    "advection",
    "shocks"
@@ -3129,7 +3129,7 @@ export const PEOPLE = [
   "anecdote": "The 1941 notes appeared in the Soviet Academy's Doklady during the war. Many Western researchers learned of them through G. K. Batchelor's 1947 review, 'Kolmogoroff's theory of locally isotropic turbulence' (Proc. Camb. Phil. Soc. 43, 533–559).",
   "quote": "",
   "quote_source": "",
-  "contested": "(1) The famous E(k) ∝ ε^2/3 k^−5/3 spectrum does not appear in Kolmogorov's 1941 notes, which work with structure functions. His student A. M. Obukhov gave the spectral form in 1941. Onsager reached it independently (1945), as did Heisenberg and von Weizsäcker later. (2) Landau objected that the dissipation rate fluctuates in space. That objection led to the 1962 refinement, and K41 is now seen as an excellent first approximation with intermittency corrections. (3) Page numbers of the 1941 notes differ between secondary sources (Eyink and Sreenivasan 2006 give first pages 9, 538 and 16 for vols 30, 31 and 32), so only volumes are given here.",
+  "contested": "(1) The famous E(k) ∝ ε^2/3 k^−5/3 spectrum does not appear in Kolmogorov's 1941 notes, which work with structure functions. His student A. M. Obukhov gave the spectral form in 1941. Onsager reached it independently (1945), as did Heisenberg and von Weizsäcker later. (2) Landau objected that the dissipation rate fluctuates in space. That objection led to the 1962 refinement, and K41 is now seen as an excellent first approximation with intermittency corrections. (3) Eyink and Sreenivasan (2006) give first pages 9, 538 and 16 for the three 1941 notes in volumes 30, 31 and 32.",
   "chapters": [
    "turbulence"
   ],
@@ -3151,7 +3151,7 @@ export const PEOPLE = [
    "turbulence",
    "mathematics"
   ],
-  "summary": "In 1945–49 Onsager independently derived the k^−5/3 spectrum. He argued that turbulence can keep dissipating energy as viscosity goes to zero only if the velocity field is rough: Hölder exponent no greater than 1/3. This 'Onsager conjecture' was settled in 2018. It ties turbulence theory to the non-smooth weak solutions that numerical schemes have to cope with.",
+  "summary": "In 1945–49 Onsager independently derived the k^−5/3 spectrum. He argued that turbulence can keep dissipating energy as viscosity goes to zero only if the velocity field is rough, with a Hölder exponent no greater than 1/3. This 'Onsager conjecture' was settled in 2018. It ties turbulence theory to the non-smooth weak solutions that numerical schemes have to cope with.",
   "contributions": [
    {
     "year": "1945",
@@ -3178,7 +3178,7 @@ export const PEOPLE = [
   "anecdote": "The threshold took nearly 70 years to settle. Eyink (1994) proved a slightly weaker form of the energy-conserving half, and Constantin, E and Titi (1994) proved it in a short argument. Philip Isett (Annals of Mathematics 188, 2018) proved the other half. For every Hölder exponent below 1/3 he constructed weak Euler solutions that fail to conserve energy, building on the convex-integration programme of De Lellis and Székelyhidi.",
   "quote": "",
   "quote_source": "",
-  "contested": "Onsager stated the result with almost no proof; Isett writes that he 'asserted' the energy-conserving half, so 'conjecture' is a later label. Correction: Isett's 2018 solutions have compact support in time, so they fail to conserve energy, but they do not strictly dissipate it. Solutions that strictly dissipate energy were constructed by Buckmaster, De Lellis, Székelyhidi and Vicol (Comm. Pure Appl. Math. 72, 2019). His turbulence work was little known for decades; Eyink and Sreenivasan's 2006 review in Reviews of Modern Physics brought it back into view.",
+  "contested": "Onsager stated the result with almost no proof; Isett writes that he 'asserted' the energy-conserving half, so 'conjecture' is a later label. Isett's 2018 solutions have compact support in time, so they fail to conserve energy, but they do not strictly dissipate it. Solutions that strictly dissipate energy were constructed by Buckmaster, De Lellis, Székelyhidi and Vicol (Comm. Pure Appl. Math. 72, 2019). His turbulence work was little known for decades; Eyink and Sreenivasan's 2006 review in Reviews of Modern Physics brought it back into view.",
   "chapters": [
    "turbulence",
    "shocks"
@@ -3211,7 +3211,7 @@ export const PEOPLE = [
    },
    {
     "year": "1940s; in print 1950",
-    "what": "Fourier-mode ('von Neumann') stability analysis: insert a single Fourier mode into the linearised difference equation and require that its amplification not grow. He never published a standalone account. A derivation appears in the 1950 Tellus paper he co-authored, and in 1956 Lax and Richtmyer call the necessary condition 'the Von Neumann condition'.",
+    "what": "Fourier-mode ('von Neumann') stability analysis, inserting a single Fourier mode into the linearised difference equation and requiring that its amplification factor not grow. He never published a standalone account. A derivation appears in the 1950 Tellus paper he co-authored, and in 1956 Lax and Richtmyer call the necessary condition 'the Von Neumann condition'.",
     "work": "Charney, Fjørtoft & von Neumann, Tellus 2 (1950), Section V; Lax & Richtmyer, Comm. Pure Appl. Math. 9 (1956)",
     "confidence": "medium"
    },
@@ -3234,7 +3234,7 @@ export const PEOPLE = [
   "anecdote": "ENIAC's internal memory was too small for the forecast. Norman Phillips's memoir of Charney says von Neumann worked out a way to integrate the nonlinear vorticity equation using Fourier sums, cycling intermediate results out to punched cards and back in.",
   "quote": "We shall employ a heuristic procedure which is, however, patterned after the rigorous method of Courant, Friedrichs, and Lewy (1928).",
   "quote_source": "Charney, Fjørtoft & von Neumann, Tellus 2 (1950), Section V on computational stability: https://tellusjournal.org/articles/10.3402/tellusa.v2i4.8607",
-  "contested": "The name 'von Neumann–Richtmyer artificial viscosity' compresses a longer history. Rudolf Peierls suggested an artificially large viscosity to von Neumann in a letter of 28 March 1944. Richtmyer worked the idea out in Los Alamos report LA-671 (March 1948), writing that von Neumann had pointed out the need for a dissipative mechanism. The joint paper appeared in 1950. The scheme von Neumann actually ran in 1944 had no artificial viscosity (Morgan & Archer, 2021). On stability analysis, textbooks often say it was 'first described' in Crank and Nicolson (1947); that paper's citation of von Neumann could not be confirmed here. The earliest confirmed printed use involving von Neumann is the 1950 Tellus paper. O'Brien, Hyman and Kaplan (J. Math. Phys. 29 (1951), 223–251) gave an early systematic account.",
+  "contested": "The name 'von Neumann–Richtmyer artificial viscosity' compresses a longer history. Rudolf Peierls suggested an artificially large viscosity to von Neumann in a letter of 28 March 1944. Richtmyer worked the idea out in Los Alamos report LA-671 (March 1948), writing that von Neumann had pointed out the need for a dissipative mechanism. The joint paper appeared in 1950. The scheme von Neumann actually ran in 1944 had no artificial viscosity (Morgan & Archer, 2021). On stability analysis, the earliest printed derivation co-authored by von Neumann is in the 1950 Tellus paper, and O'Brien, Hyman and Kaplan (J. Math. Phys. 29 (1951), 223–251) gave an early systematic account.",
   "chapters": [
    "advection",
    "shocks",
@@ -3288,7 +3288,7 @@ export const PEOPLE = [
   "anecdote": "The argument for the condition is geometric. Changing the initial data near the ends of the wave equation's domain of dependence changes the true solution at a point. If those initial points lie outside the difference scheme's domain of dependence, the computed value at that point cannot respond, so refining the mesh at a fixed ratio cannot make it converge.",
   "quote": "From this follows a remarkable fact: if for the case k < 1 one lets h → 0, then the solution to the difference equation in general cannot converge to the solution of the differential equation.",
   "quote_source": "Courant, Friedrichs & Lewy (1928), Section 2, English translation in IBM J. Res. Dev. 11 (1967). Here h is the time step and kh the space step for u_tt − u_xx = 0: https://mesonet2.agron.iastate.edu/pickup/CFL.pdf",
-  "contested": "Some informal accounts credit Lewy personally with the key domain-of-dependence insight. No primary source for this was found, so the condition should be treated as joint work of the three authors. MacTutor describes the paper as giving criteria for 'the stability of numerical solutions', which reflects later usage; the paper itself speaks of convergence. MacTutor also gives the title with 'Differentialgleichungen'; the correct word is 'Differenzengleichungen' (difference equations).",
+  "contested": "Some informal accounts credit Lewy personally with the key domain-of-dependence insight; the published paper presents the condition as the joint work of all three authors. MacTutor describes the paper as giving criteria for 'the stability of numerical solutions', which reflects later usage; the paper itself speaks of convergence. MacTutor also gives the title with 'Differentialgleichungen'; the correct word is 'Differenzengleichungen' (difference equations).",
   "chapters": [
    "advection"
   ],

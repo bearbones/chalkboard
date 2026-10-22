@@ -1,7 +1,7 @@
-// Chapter 9: Diffusion and stiffness. Why explicit diffusion needs tiny
-// steps, what implicit methods buy and cost, Crank–Nicolson's ringing, what
-// stiffness means for ODE solvers, the cell Péclet number, and Du Fort–Frankel
-// as a scheme that is stable but converges to the wrong equation.
+// Chapter 9: Diffusion and stiffness. Explicit diffusion step limits,
+// implicit solvers, Crank–Nicolson's ringing, stiffness in ODE solvers,
+// the cell Péclet number, and Du Fort–Frankel as a scheme that is stable
+// but converges to the wrong equation.
 // Kernels: src/sims/diffusion.js, src/sims/stiff.js and the chapter's own
 // src/sims/ch-stiffness-richardson.js; tests in tests/fluid-course/ch-stiffness.test.js.
 
@@ -16,30 +16,30 @@ export const chapter = {
   id: 'stiffness',
   title: 'Diffusion and stiffness',
   short: 'Stiffness',
-  blurb: 'Why explicit diffusion needs tiny steps, and what implicit methods buy and cost.',
+  blurb: 'Explicit diffusion limits, implicit solvers, Crank–Nicolson oscillations, stiffness, and the cell Péclet number.',
   minutes: 35,
   html: String.raw`
-<p class="lead-in">Diffusion is the gentlest process in fluid dynamics: it only ever smooths. Yet it is the term that most often forces a simulation to crawl. An explicit scheme for diffusion must take time steps proportional to the square of the grid spacing, so every refinement costs four times as many steps. This chapter shows where that limit comes from, what implicit methods buy (and what they cost), why the favourite implicit method still produces wiggles, and how the same story reappears for any problem with widely separated time scales. That property has a name: stiffness. It ends with a scheme that is stable for every step and still converges to the wrong answer.</p>
+<p class="lead-in">Although physical diffusion smooths every gradient, it often restricts the time step more severely than advection. Because an explicit diffusion solver requires time steps proportional to the square of the grid spacing, halving $\Delta x$ multiplies the step count by four. This chapter derives that quadratic stability limit, shows how implicit methods remove it with a tridiagonal linear solve, explains why Crank–Nicolson still oscillates on sharp initial data, and connects these effects to the general concept of stiffness in systems with widely separated timescales—closing with Du Fort–Frankel, an unconditionally stable explicit scheme that can converge to the wrong differential equation.</p>
 
 <h2 id="heat">The heat equation and the explicit limit</h2>
 
-<p>Put a hot spot in a cold bar and wait. Heat flows from hot to cold, and it flows fastest where the temperature profile is most sharply curved: a peak loses heat to both neighbours at once, a valley gains from both. A straight-line profile does not change at all, because each point gains as much from one side as it loses to the other. That is the whole of the <dfn data-term="diffusion-equation">diffusion equation</dfn>: the rate of change is proportional to the curvature.</p>
+<p>When a warm region sits inside a cooler bar, heat flows from hot to cold and changes temperature fastest where the profile is most sharply curved, since a local peak loses heat to both sides while a trough gains from both. Along a straight-line profile, each point receives as much heat from one side as it loses to the other, so the temperature remains steady. The <dfn data-term="diffusion-equation">diffusion equation</dfn> states that the local rate of change is proportional to the second spatial derivative (curvature):</p>
 
 <div class="eq" id="eq-heat">$$\frac{\partial u}{\partial t} = \kappa\,\frac{\partial^2 u}{\partial x^2}$$<span class="eq-tag">(9.1)</span></div>
 
-<p>Here $u$ is the temperature (or a concentration, or a velocity component under viscosity) and $\kappa$ is the diffusivity, in square metres per second. Try a single Fourier mode $u = e^{-\kappa k^2 t}\sin kx$: it keeps its shape and decays at the rate $\kappa k^2$. A wave half as long dies four times as fast. That $k^2$ is the root of everything in this chapter. Diffusion erases the shortest waves almost at once and the longest ones slowly, so a heat problem always contains many time scales at once.</p>
+<p>Here $u$ is the temperature (or a concentration, or a velocity component under viscosity) and $\kappa$ is the diffusivity, in square metres per second. Substituting a single Fourier mode $u = e^{-\kappa k^2 t}\sin kx$ shows that it keeps its shape and decays at the rate $\kappa k^2$: halving the wavelength quadruples the decay rate, separating the timescales of short and long waves by factors of $k^2$. Diffusion erases the shortest waves almost immediately while the longest ones decay slowly, so a heat problem spans many timescales at once.</p>
 
 <p>The obvious scheme, FTCS (forward in time, centred in space, the same recipe as in <a href="#/advection/ftcs">the advection chapter</a>), replaces the time derivative by a forward difference and the curvature by the centred second difference:</p>
 
 <div class="eq" id="eq-ftcs">$$u_j^{n+1} = u_j^n + r\left(u_{j+1}^n - 2u_j^n + u_{j-1}^n\right),\qquad r = \frac{\kappa\,\Delta t}{\Delta x^2}$$<span class="eq-tag">(9.2)</span></div>
 
-<p>It is an <dfn data-term="explicit-method">explicit method</dfn>: each new value comes straight from old ones. The dimensionless mesh ratio $r$ measures how far heat spreads in one step compared with one cell. Rewrite the update as $u_j^{n+1} = (1-2r)\,u_j^n + r\,u_{j+1}^n + r\,u_{j-1}^n$ and its meaning is plain: the new temperature is a weighted average of the old ones nearby. The weights add up to one. While $r \le 1/2$ they are all non-negative, so the new value lies between its neighbours' old values and no new peaks can appear. Once $r > 1/2$ the centre weight turns negative: a cell that was warmer than its neighbours ends up colder than them. That is overshoot, and it feeds on itself.</p>
+<p>Because each updated value is computed directly from known values at level $n$, FTCS is an <dfn data-term="explicit-method">explicit method</dfn>. The dimensionless mesh ratio $r$ compares the diffusion distance over one step with the cell width. Rearranging the update as $u_j^{n+1} = (1-2r)\,u_j^n + r\,u_{j+1}^n + r\,u_{j-1}^n$ expresses the new temperature as a weighted combination of the three neighbouring values whose weights sum to 1. For $r \le 1/2$, all three weights are non-negative, so the new value is bounded by the old values of the stencil and no new extrema can form. When $r > 1/2$, the central weight $1 - 2r$ becomes negative, causing a local peak to overshoot into a trough on the next step and amplifying the oscillation at every subsequent step.</p>
 
-<p><dfn data-term="von-neumann-analysis">Von Neumann analysis</dfn> makes this exact. Put $u_j^n = G^n e^{ij\xi}$, with $\xi = k\Delta x$ the wavenumber in grid units, and the scheme multiplies the mode by its <dfn data-term="amplification-factor">amplification factor</dfn></p>
+<p><dfn data-term="von-neumann-analysis">Von Neumann analysis</dfn> quantifies this growth rate. Substituting a discrete Fourier mode $u_j^n = G^n e^{ij\xi}$, where $\xi = k\Delta x$ is the wavenumber in grid units, shows that each step multiplies the mode by the <dfn data-term="amplification-factor">amplification factor</dfn></p>
 
 <div class="eq" id="eq-ftcs-g">$$G(\xi) = 1 - 4r\sin^2\frac{\xi}{2},\qquad |G| \le 1 \text{ for every } \xi \iff r \le \frac{1}{2}$$<span class="eq-tag">(9.3)</span></div>
 
-<p>The worst mode is the shortest wave the grid can hold, the sawtooth $(-1)^j$ at $\xi = \pi$, for which $G = 1 - 4r$. At $r = 0.52$ it is $-1.08$. That mode is the one the exact solution kills fastest, and the one FTCS amplifies when $r$ is too large. The condition $\Delta t \le \Delta x^2/(2\kappa)$ is the price: halve the cell size and you must take four times as many steps. In three dimensions on a uniform grid the limit tightens to $\Delta t \le \Delta x^2/(6\kappa)$, and the work to reach a fixed time grows like $n^5$ for $n$ cells per side: $n^3$ unknowns times $n^2$ steps.</p>
+<p>The most restrictive mode is the shortest wave the grid can represent—the sawtooth $(-1)^j$ at $\xi = \pi$, for which $G(\pi) = 1 - 4r$ (equal to $-1.08$ at $r = 0.52$). The mode that the exact heat equation damps fastest is therefore the first one that FTCS amplifies when $r > 1/2$. Because stability requires $\Delta t \le \Delta x^2/(2\kappa)$, halving the cell size requires four times as many time steps. On a uniform three-dimensional grid, the limit tightens to $\Delta t \le \Delta x^2/(6\kappa)$, so the total work to reach a fixed time with $n$ cells per side scales as $n^5$ ($n^3$ unknowns across $O(n^2)$ steps).</p>
 
 <div data-quiz="q1"></div>
 
@@ -62,11 +62,11 @@ export const chapter = {
 
 <h2 id="implicit">Implicit methods: one solve per step</h2>
 
-<p>The exact heat equation has no speed limit. A change at one end of the bar is felt, very faintly, everywhere at once. FTCS lets information move only one cell per step, and pays for it with the $\Delta x^2$ limit. The fix is to let every new value depend on every other new value: evaluate the curvature at the <em>new</em> time level instead of the old one. That is backward Euler in time, or BTCS:</p>
+<p>In the exact heat equation, a perturbation at one end of the bar influences the entire domain instantaneously, whereas an explicit three-point stencil propagates information by only one cell per step and is restricted to $\Delta t \propto \Delta x^2$. Evaluating the spatial second difference at the <em>new</em> time level $n+1$ instead of level $n$ couples all new values simultaneously, giving backward Euler in time (BTCS):</p>
 
 <div class="eq" id="eq-btcs">$$-r\,u_{j-1}^{n+1} + (1 + 2r)\,u_j^{n+1} - r\,u_{j+1}^{n+1} = u_j^n$$<span class="eq-tag">(9.4)</span></div>
 
-<p>The unknowns now appear on both sides, which makes it an <dfn data-term="implicit-method">implicit method</dfn>: one step means solving a linear system with one equation per interior node. Its amplification factor is $G = 1/\left(1 + 4r\sin^2(\xi/2)\right)$. That lies between 0 and 1 for every $r$ and every wave, so the scheme is stable for any step. The shortest waves are also damped hardest, as they should be.</p>
+<p>Because the unknown values $u^{n+1}$ appear in the spatial difference, BTCS is an <dfn data-term="implicit-method">implicit method</dfn> that advances the solution by solving a linear system of equations at each time step. Its amplification factor $G(\xi) = 1/\left(1 + 4r\sin^2(\xi/2)\right)$ lies in $(0, 1]$ for every $r > 0$ and every wavenumber $\xi$, making the scheme unconditionally stable and damping the shortest wavelengths most strongly, just as the exact equation does.</p>
 
 <p>The system is tridiagonal: each equation involves a node and its two neighbours. Gaussian elimination on a tridiagonal matrix needs no fill-in and no pivoting when the diagonal dominates ($1 + 2r > r + r$ here). It reduces to two sweeps, the <dfn data-term="thomas-algorithm">Thomas algorithm</dfn>. The forward sweep clears the entry left of the diagonal row by row and scales each row so its diagonal is 1, storing two numbers per row, $c'_j$ and $d'_j$. The backward sweep then reads off the unknowns from the bottom up: $u_j = d'_j - c'_j\,u_{j+1}$. For $m$ unknowns that is $8m - 7$ arithmetic operations, counted from the code the figure runs: two for the first row, six for each middle row and five for the last on the way down, then two per row on the way back. The name comes from a 1949 report by L. H. Thomas; the method itself is just elimination, written out for three diagonals.</p>
 
@@ -75,10 +75,10 @@ export const chapter = {
 <div class="try"><ol>
 <li>Press Next operation a few times and follow the yellow row down the matrix. Each forward row reads only the row above it.</li>
 <li>Keep pressing. At the bottom the last row holds one unknown, and back substitution climbs up again. The new profile on the right appears from the right-hand end.</li>
-<li>Read the flop count when the step is done: 65, which is $8 \times 9 - 7$. Raise $r$ to 20 and finish another step: the count is the same. The cost of an implicit step does not depend on its size.</li>
+<li>Read the flop count when the step is done: 65, which is $8 \times 9 - 7$. Raise $r$ to 20 and finish another step: the operation count is unchanged, because the work of an implicit step does not depend on its step size.</li>
 </ol></div>
 
-<p>So an implicit step costs more than an explicit one. In this code, backward Euler and Crank–Nicolson spend about 13 operations per unknown (5 to form the right-hand side, about 8 in the solve) against 5 for FTCS, and divisions are slow, so the real ratio is larger. What they buy is the freedom to choose the step for accuracy instead of stability. The table shows the trade on $\sin\pi x$, run to $t = 0.1$ with $\kappa = 1$.</p>
+<p>In 1D, each backward Euler or Crank–Nicolson step performs about 13 floating-point operations per unknown (5 to assemble the right-hand side and about 8 in the Thomas solve, including a division per row) compared with 5 for FTCS. In return, the time step $\Delta t$ can be chosen for temporal accuracy rather than explicit stability, as shown in the table below for $u_0 = \sin\pi x$ integrated to $t = 0.1$ with $\kappa = 1$.</p>
 
 <div class="table-wrap"><table>
 <thead><tr><th class="num">cells $n$</th><th class="num">FTCS steps at $r = 1/2$</th><th class="num">FTCS max error</th><th class="num">Crank–Nicolson steps, $\Delta t = 0.005$</th><th class="num">Crank–Nicolson max error</th></tr></thead>
@@ -88,7 +88,7 @@ export const chapter = {
 <tr><td class="num">200</td><td class="num">8,000</td><td class="num">$1.5\times 10^{-5}$</td><td class="num">20</td><td class="num">$6.7\times 10^{-5}$</td></tr>
 </tbody></table></div>
 
-<p>The explicit scheme's step count grows like $n^2$; the implicit one does not grow at all. The errors are comparable, and the implicit runs are hundreds of times cheaper on the finer grids. Stability is not accuracy, though. Backward Euler is first order in time: with $\Delta t = 0.01$ on the same problem it gives $u(\tfrac12, 0.1) = 0.390$, where the exact value is 0.3727, an error of 5%. An implicit method lets you take a long step. It does not make that step right.</p>
+<p>While the explicit step count grows as $n^2$, the Crank–Nicolson step count remains fixed at 20 across all three grids, achieving comparable accuracy with hundreds of times fewer steps on the finest mesh. Unconditional stability does not guarantee temporal accuracy at large $\Delta t$, however: because backward Euler is only first-order accurate in time, running it with $\Delta t = 0.01$ on the same problem gives $u(\tfrac12, 0.1) = 0.390$ against the exact $0.3727$, a 5% time-truncation error.</p>
 
 <div data-quiz="q2"></div>
 
@@ -112,30 +112,30 @@ export const chapter = {
 
 <p>has $|G| \le 1$ for every $r$, so the scheme is unconditionally stable and second order in both time and space. It is the default for diffusion terms in a great many codes.</p>
 
-<aside class="history" data-era="1947">John Crank and Phyllis Nicolson published the method in the January 1947 issue of the <em>Proceedings of the Cambridge Philosophical Society</em>. It grew out of a wartime request to Douglas Hartree about a very nonlinear heat-conduction problem with a temperature-dependent heat source. According to Charlotte Froese Fischer's biography of Hartree, as quoted by MacTutor, the problem was put to Hartree and he chose Crank and Nicolson to work on it. An earlier explicit approach had given oscillating errors; their implicit method needed more work per step but removed the oscillations and allowed much larger steps. The work was done on desk calculators: MacTutor quotes Crank recalling that to burn a piece of wood numerically could then take a week. Textbooks often add that the paper was the first to print von Neumann's stability analysis. That claim goes back to secondary sources and we could not confirm it. The earliest confirmed printed account involving von Neumann is a 1950 paper with Charney and Fjørtoft.</aside>
+<aside class="history" data-era="1947">John Crank and Phyllis Nicolson published the method in the January 1947 issue of the <em>Proceedings of the Cambridge Philosophical Society</em>. It grew out of a wartime request to Douglas Hartree about a very nonlinear heat-conduction problem with a temperature-dependent heat source. According to Charlotte Froese Fischer's biography of Hartree, as quoted by MacTutor, the problem was put to Hartree and he chose Crank and Nicolson to work on it. An earlier explicit approach had given oscillating errors; their implicit method needed more work per step but removed the oscillations and allowed much larger steps. The work was done on desk calculators: MacTutor quotes Crank recalling that to burn a piece of wood numerically could then take a week. Textbooks often cite the 1947 paper as an early appearance of von Neumann's Fourier stability test; the earliest confirmed full printed account co-authored by von Neumann is the 1950 paper with Charney and Fjørtoft.</aside>
 
 <aside class="who" data-person="john-crank">Co-author of the 1947 method. His book <em>The Mathematics of Diffusion</em> (Oxford, 1956) became the standard reference on diffusion problems.</aside>
 
 <aside class="who" data-person="phyllis-nicolson">From Hartree's Manchester group. One part of her 1946 thesis treats heat flow with heat released by chemical reactions, the problem behind the 1947 paper. The paper is signed P. Nicolson; "Nicholson" is a common misspelling.</aside>
 
-<p>"Unconditionally stable" does not mean well behaved. Look at the shortest wave as $r$ grows: $G(\pi) = (1 - 2r)/(1 + 2r)$ tends to $-1$. At $r = 10$ it is $-19/21 \approx -0.905$. The exact solution would multiply that wave by $e^{-10\pi^2}$, which is zero to every digit, but Crank–Nicolson keeps 90% of it and flips its sign every step. Smooth data have almost nothing in the short waves, so nobody notices. A step, a kink or a sudden change of boundary value has plenty, and those short waves now ring: a sawtooth beside the jump that alternates in sign from step to step and fades only slowly.</p>
+<p>Although $|G(\xi)| \le 1$ for all $r$, Crank–Nicolson damps the shortest wavelengths poorly when $r$ is large: as $r \to \infty$, $G(\pi) = (1 - 2r)/(1 + 2r)$ approaches $-1$, reaching $-19/21 \approx -0.905$ at $r = 10$. Whereas the exact heat equation multiplies that sawtooth mode by $e^{-10\pi^2} \approx 0$, Crank–Nicolson retains 90% of its amplitude and reverses its sign on every step. Smooth initial profiles contain negligible energy at $\xi \approx \pi$, but a step, kink, or sudden change in boundary value excites high-wavenumber modes that persist as a sign-alternating sawtooth beside the steep gradient.</p>
 
 <figure data-widget="stiffness-heat" data-preset="cn-ringing" class="wide"><figcaption>The same laboratory, set to Crank–Nicolson on a step from $u = 1$ to $u = 0$ at $r = 10$ (50 cells). Watch the profile near $x = 1/2$ and the total variation readout, which for the exact solution can only fall.</figcaption></figure>
 
 <div class="try"><ol>
 <li>Press Step a few times. The total variation jumps from 1 to 1.567 on the first step and the profile zig-zags beside the jump. Press Play to watch the zig-zag flip every step.</li>
-<li>Switch to backward Euler at the same $r$. No wiggles: its $G$ tends to 0 for short waves, not to $-1$. On this data its error after 12 steps (0.0070) is smaller than Crank–Nicolson's (0.020), despite being first order.</li>
+<li>Switch to backward Euler at the same $r$. Because its $G(\pi)$ approaches 0 for short waves rather than $-1$, no oscillations appear, and on this discontinuous profile its error after 12 steps (0.0070) is smaller than Crank–Nicolson's (0.020).</li>
 <li>Back on Crank–Nicolson, tick <em>Start with two backward-Euler half steps</em> and reset. The ringing is gone. Press Step 13 times, which reaches the same time as 12 full steps because the start-up uses two presses: the error is $1.7\times 10^{-4}$, forty times smaller than backward Euler's.</li>
-<li>Choose the θ-method and try $\theta = 0.6$, then $0.95$. The first still overshoots (total variation 1.22); the second is monotone, at the cost of first-order accuracy.</li>
+<li>Choose the θ-method and try $\theta = 0.6$, then $0.95$. The first still overshoots (total variation 1.22), while the second is monotone and first-order accurate in time.</li>
 <li>Find where ringing starts. With Crank–Nicolson on the step, new wiggles appear once $r$ passes about 4.</li>
 </ol></div>
 
-<p>The onset in the last item is worth a sentence. For $r > 1/2$ the shortest waves already have $G &lt; 0$ and flip sign, but on this step they start small enough that the profile stays monotone up to $r = 4$, and from $r = 4.05$ the total variation rises. The textbook guarantee is weaker: the $\theta$-method keeps the maximum principle when $r(1 - \theta) \le 1/2$, which for Crank–Nicolson means $r \le 1$. That is a sufficient condition, not the place where trouble starts, and it depends on the data.</p>
+<p>Although the shortest waves have $G &lt; 0$ and alternate in sign as soon as $r > 1/2$, on this 50-cell step profile their amplitude remains small enough that the solution stays monotone up to $r = 4$, with the total variation rising only from $r = 4.05$ onward. The stricter textbook bound $r(1 - \theta) \le 1/2$—which gives $r \le 1$ for Crank–Nicolson—is the sufficient condition for the $\theta$-method to satisfy a discrete maximum principle for arbitrary initial data.</p>
 
 <p>Practitioners have four standard cures, roughly in order of use. <strong>Rannacher start-up</strong> (Rannacher, 1984): replace the first Crank–Nicolson step, where the data are sharpest, by two (or four) backward-Euler half steps, which damp the short waves, then continue with Crank–Nicolson. Second-order accuracy survives. <strong>$\theta$ a little above 1/2</strong> damps the short waves at every step but drops to first order. To stop the sign flips at $r = 10$ you need $\theta \ge 1 - 1/(4r) = 0.975$. <strong>An L-stable second-order method</strong> such as BDF2, the subject of the next section. And <strong>smaller steps</strong> while the data are sharp. Østerby (2003) compares several of these.</p>
 
 <details class="deeper"><summary>Go deeper: Crank–Nicolson is the trapezoid rule</summary>
-<p>Discretise in space only and each Fourier mode obeys an ODE $\dot{y} = \lambda y$ with $\lambda = -(4\kappa/\Delta x^2)\sin^2(\xi/2)$. The trapezoid rule $y_{n+1} = y_n + \tfrac{h}{2}(\lambda y_n + \lambda y_{n+1})$ gives $y_{n+1} = R(h\lambda)\,y_n$ with</p>
+<p>Discretising in space alone decouples the Fourier modes into independent ODEs $\dot{y} = \lambda y$ with $\lambda = -(4\kappa/\Delta x^2)\sin^2(\xi/2)$. Applying the trapezoid rule $y_{n+1} = y_n + \tfrac{h}{2}(\lambda y_n + \lambda y_{n+1})$ gives $y_{n+1} = R(h\lambda)\,y_n$ with</p>
 <p>$$R(z) = \frac{1 + z/2}{1 - z/2},\qquad z = h\lambda = -4r\sin^2\frac{\xi}{2},$$</p>
 <p>which is (9.6). The same substitution turns backward Euler into $R(z) = 1/(1 - z)$ and FTCS into $R(z) = 1 + z$. For the $\theta$-method, $G(\pi) = (1 - 4(1-\theta)r)/(1 + 4\theta r)$, which is non-negative when $\theta \ge 1 - 1/(4r)$. The maximum principle needs the centre weight of the explicit half to be non-negative, $1 - 2(1-\theta)r \ge 0$, which is $\theta \ge 1 - 1/(2r)$: 0.95 at $r = 10$.</p>
 </details>
@@ -144,26 +144,26 @@ export const chapter = {
 
 <h2 id="stiffness">What stiffness is</h2>
 
-<p>Step back from the heat equation. Discretise it in space only and you get one ordinary differential equation per node, $\mathrm{d}\mathbf{u}/\mathrm{d}t = A\mathbf{u}$, with $A$ the second-difference matrix divided by $\Delta x^2$. This is the <dfn data-term="method-of-lines">method of lines</dfn>: space is done, and choosing a time-stepper means choosing an ODE solver. The eigenvalues of $A$ are</p>
+<p>Discretising the heat equation in space while leaving time continuous yields a system of coupled ordinary differential equations, $\mathrm{d}\mathbf{u}/\mathrm{d}t = A\mathbf{u}$, where $A$ is the centred second-difference matrix divided by $\Delta x^2$. In this <dfn data-term="method-of-lines">method of lines</dfn> formulation, choosing a time-stepping scheme is equivalent to choosing an ODE integrator for $\mathrm{d}\mathbf{u}/\mathrm{d}t = A\mathbf{u}$, whose behaviour is governed by the eigenvalues of $A$:</p>
 
 <div class="eq" id="eq-mol">$$\lambda_k = -\frac{4\kappa}{\Delta x^2}\sin^2\frac{k\pi\Delta x}{2},\qquad k = 1, \ldots, n-1$$<span class="eq-tag">(9.7)</span></div>
 
-<p>They run from about $-\kappa\pi^2$ (the smooth mode that carries the answer) to about $-4\kappa/\Delta x^2$ (the sawtooth, which decays almost at once). The ratio of the two, the stiffness ratio $\cot^2(\pi\Delta x/2) \approx 4/(\pi^2\Delta x^2)$, is about 1,012 for 50 cells, and it grows like $n^2$. A problem like this is called stiff: some components decay far faster than the solution you care about changes. <dfn data-term="stiffness">Stiffness</dfn> is not a property of the solution. It is the mismatch between the step that accuracy needs and the step that an explicit method's stability allows. The ratio alone does not make a definition: a problem whose fast modes you must actually follow is not stiff, however large the ratio. Lambert (1991) discusses the definitions in detail.</p>
+<p>They run from about $-\kappa\pi^2$ (the smooth mode that carries the answer) to about $-4\kappa/\Delta x^2$ (the sawtooth, which decays almost at once). The ratio of the two, the stiffness ratio $\cot^2(\pi\Delta x/2) \approx 4/(\pi^2\Delta x^2)$, is about 1,012 for 50 cells, and it grows like $n^2$. In a <dfn data-term="stiffness">stiff</dfn> problem, the fastest modes decay on a timescale much shorter than the motion of interest—forcing an explicit solver to take tiny steps for stability even when the solution is varying slowly. If you actually need to resolve those fast modes, the problem is not stiff, regardless of the eigenvalue ratio. Lambert (1991) discusses the definitions in detail.</p>
 
 <p>To see what a method does to each mode, apply it to Dahlquist's test equation $y' = \lambda y$. One step gives $y_{n+1} = R(z)\,y_n$ with $z = h\lambda$, and the method is stable for that mode when $|R(z)| \le 1$. The set of such $z$ in the complex plane is the method's <dfn data-term="stability-region">stability region</dfn>. For explicit Euler, $R(z) = 1 + z$, a disc of radius 1 centred on $-1$, so a real negative eigenvalue needs $h|\lambda| \le 2$. For the stiffest heat mode that is $h \le \Delta x^2/(2\kappa\cos^2(\pi\Delta x/2))$, just above $\Delta x^2/(2\kappa)$: the FTCS limit (9.3), now in ODE form. RK4 does better, reaching $-2.785$ on the real axis, but every explicit Runge–Kutta method has a polynomial $R$, which must grow as $|z| \to \infty$. Its region is bounded, and its step still shrinks like $\Delta x^2$.</p>
 
-<p>Implicit methods have rational $R$, and some contain the whole left half-plane. That property is <dfn data-term="a-stability">A-stability</dfn> (Dahlquist, 1963). Every decaying mode then stays bounded, whatever the step. Backward Euler, the trapezoid rule and the two-step backward differentiation formula BDF2 are A-stable. In the same paper Dahlquist proved that an A-stable linear multistep method cannot be more than second order: there is no free lunch at order three. A-stability is still not enough, as the last section showed. The trapezoid rule has $R(z) \to -1$ as $z \to -\infty$, and that limit is Crank–Nicolson's ringing. Methods with $R(z) \to 0$ there, so that very stiff modes vanish in one step, are called <dfn data-term="l-stability">L-stable</dfn>: backward Euler and BDF2 are, the trapezoid rule is not. The workhorses of stiff ODE solvers are of this kind. Curtiss and Hirschfelder's 1952 paper <em>Integration of stiff equations</em> is the standard early reference for both the word and the backward differentiation formulas.</p>
+<p>Implicit methods have rational stability functions $R(z)$, allowing their stability regions to cover the entire left half-plane $\operatorname{Re} z \le 0$. Methods with this property are called <dfn data-term="a-stability">A-stable</dfn> (Dahlquist, 1963), ensuring that every decaying mode remains bounded at any step size. Backward Euler, the trapezoid rule, and the two-step backward differentiation formula (BDF2) are all A-stable; in the same 1963 paper, Dahlquist proved that no A-stable linear multistep method can exceed second order (the second Dahlquist barrier). As Crank–Nicolson showed, however, A-stability alone does not guarantee strong damping of the fastest modes, because the trapezoid rule has $R(z) \to -1$ as $z \to -\infty$. An A-stable method that also satisfies $\lim_{z \to -\infty} R(z) = 0$ is called <dfn data-term="l-stability">L-stable</dfn>: backward Euler and BDF2 are L-stable and damp very stiff modes in a single step, whereas the trapezoid rule is not. Curtiss and Hirschfelder's 1952 paper <em>Integration of stiff equations</em> introduced both the term "stiff" and the backward differentiation formulas.</p>
 
 <figure data-widget="stiffness-regions" class="wide"><figcaption>Left: the stability region (shaded) of the chosen method in the plane of $z = h\lambda$, with the heat equation's eigenvalues $h\lambda_k$ for $n$ cells marked on the negative real axis. Right: the growth factor $|R|$ per step along the negative real axis on log scales, against the exact factor $e^{-h|\lambda|}$, with each heat mode marked. Modes above the dashed line grow.</figcaption></figure>
 
 <div class="try"><ol>
 <li>With explicit Euler, $n = 16$ and $h = 0.0019$, all 15 modes sit inside the disc. Drag $h$ up past 0.00197 and watch the stiffest mode leave the region.</li>
-<li>Set $h$ back to 0.0019 and raise $n$ to 32. The eigenvalues spread four times further left: 21 of the 31 modes now grow. Each refinement of the grid costs a factor of four in $h$.</li>
+<li>Set $h$ back to 0.0019 and raise $n$ to 32. The eigenvalues spread four times further left: 21 of the 31 modes now grow. Each grid refinement requires reducing $h$ by a factor of four.</li>
 <li>Switch to RK4. Its region is bigger, so the limit is about 40% larger, but it is still bounded.</li>
 <li>Choose the trapezoid rule with $n = 64$ and $h = 0.01$. Every mode is inside, but on the right $|R|$ of the stiffest mode is about 0.98, where the exact factor is zero to every digit. Switch to BDF2 or implicit Euler and that factor drops well below 1.</li>
 </ol></div>
 
-<p>Stiffness is not special to diffusion. Any system with a fast relaxation and a slow evolution behaves this way: chemical kinetics, electrical circuits, a stiff spring in a soft structure. The cleanest small example is the Prothero–Robinson equation $y' = \lambda(y - \cos t) - \sin t$, with $\lambda = -1000$. Its solution through $y(0) = 1$ is just $\cos t$; any other solution is pulled onto $\cos t$ within about $1/1000$ of a time unit. An accurate step for $\cos t$ could be $0.1$. Explicit Euler needs $h &lt; 2/1000$ to stay stable.</p>
+<p>Stiffness arises in any system that couples rapid relaxation to a slow evolution, including chemical kinetics, electrical networks, and elastic structures with stiff springs. A compact scalar example is the Prothero–Robinson equation $y' = \lambda(y - \cos t) - \sin t$ with $\lambda = -1000$, whose exact solution through $y(0) = 1$ is simply $\cos t$, while any perturbation off that curve decays on a timescale of $1/1000$. Although $h = 0.1$ easily resolves $\cos t$, explicit Euler requires $h &lt; 2/1000$ for stability.</p>
 
 <figure data-widget="stiffness-ode" data-preset="euler-broken" class="wide"><figcaption>A stiff ODE integrated to the end of its run. Left: the numerical solution against the exact one. Right: the error on a log scale. The readouts give $h\lambda$ for the fast eigenvalue $\lambda = -1000$ and the factor $R(h\lambda)$ the method applies to that mode each step.</figcaption></figure>
 
@@ -185,7 +185,7 @@ export const chapter = {
 
 <h2 id="peclet">When diffusion is too weak: the Péclet number</h2>
 
-<p>Now let the fluid move. A flow of speed $a$ carries heat downstream while diffusion spreads it. Their ratio over a length $L$ is the <dfn data-term="peclet-number">Péclet number</dfn> $\mathrm{Pe} = aL/\kappa$, named after Jean Claude Eugène Péclet; we could not establish who first gave the number his name. When Pe is large, carrying wins nearly everywhere, and diffusion only matters in thin layers where something forces a sharp change. The steady problem with fixed values at both ends shows such a layer:</p>
+<p>When a fluid flows at speed $a$ while diffusing heat with diffusivity $\kappa$, the ratio of advective transport to diffusive spreading over a length scale $L$ defines the <dfn data-term="peclet-number">Péclet number</dfn> $\mathrm{Pe} = aL/\kappa$, named after the French physicist Jean Claude Eugène Péclet. At large $\mathrm{Pe}$, advection dominates across most of the domain and diffusion is confined to thin boundary or internal layers where boundary conditions force a rapid change, as in the steady two-point problem</p>
 
 <div class="eq" id="eq-advdiff">$$-a\,u' + \kappa\,u'' = 0,\quad u(0) = 0,\ u(1) = 1:\qquad u(x) = \frac{e^{\mathrm{Pe}\,x} - 1}{e^{\mathrm{Pe}} - 1}$$<span class="eq-tag">(9.8)</span></div>
 
@@ -193,7 +193,7 @@ export const chapter = {
 
 <div class="eq" id="eq-central-weights">$$u_j = \frac{1}{2}\left[\left(1 + \frac{P}{2}\right)u_{j-1} + \left(1 - \frac{P}{2}\right)u_{j+1}\right],\qquad P = \frac{a\,\Delta x}{\kappa}$$<span class="eq-tag">(9.9)</span></div>
 
-<p>where $P$ is the <dfn data-term="cell-peclet-number">cell Péclet number</dfn>, the Péclet number of one cell. Read (9.9) as before: a node is an average of its neighbours, weighted towards upstream. When $P > 2$ the downstream weight $1 - P/2$ is negative, and the scheme loses the maximum principle just as FTCS did at $r > 1/2$. The discrete solution is a constant plus a multiple of $\rho^j$ with $\rho = (1 + P/2)/(1 - P/2)$, which is negative for $P > 2$. So it alternates in sign from node to node. At $P = 4$, $\rho = -3$, and the values next to the outflow are $-1/3$, $1/9$, $-1/27$ and so on, to within $10^{-9}$: a temperature below both boundary values.</p>
+<p>where $P$ is the <dfn data-term="cell-peclet-number">cell Péclet number</dfn>, the Péclet number on the scale of a single grid cell. Equation (9.9) expresses $u_j$ as a weighted average of its two neighbours biased toward the upstream node $u_{j-1}$. When $P > 2$, the downstream weight $\tfrac12(1 - P/2)$ turns negative and the scheme loses its discrete maximum principle, just as FTCS did for $r > 1/2$. Because the difference equation has general solution $A + B\rho^j$ with root $\rho = (1 + P/2)/(1 - P/2)$, which is negative for $P > 2$, the discrete profile oscillates in sign from node to node: at $P = 4$, $\rho = -3$, and the interior values adjacent to the outflow alternate through $-1/3$, $1/9$, $-1/27$, dipping below both boundary values.</p>
 
 <figure data-widget="stiffness-peclet" data-preset="central-wiggles"><figcaption>Steady advection–diffusion with the boundary layer at $x = 1$. Central differencing, first-order upwind and exponential fitting on the same grid, against the exact profile (9.8). The Péclet slider changes the physics; the grid select changes only the resolution.</figcaption></figure>
 
@@ -220,7 +220,7 @@ export const chapter = {
 
 <div class="eq" id="eq-richardson">$$u_j^{n+1} = u_j^{n-1} + 2r\left(u_{j+1}^n - 2u_j^n + u_{j-1}^n\right)$$<span class="eq-tag">(9.10)</span></div>
 
-<p>which is centred in time and space and second order in both. We have not checked which time-stepping formula of the 1910–1911 paper MacTutor means. The formula above is the textbook one, and it is unstable for every $r > 0$. Its amplification factors satisfy $G^2 + 8r\sin^2(\xi/2)\,G - 1 = 0$. The two roots multiply to $-1$, so one of them always lies outside the unit circle. For the shortest wave at $r = 1$ that root is $-(4 + \sqrt{17}) \approx -8.1$.</p>
+<p>which is centred and second-order accurate in both time and space, and unconditionally unstable for every $r > 0$. Its amplification factors satisfy the quadratic $G^2 + 8r\sin^2(\xi/2)\,G - 1 = 0$, whose two roots multiply to $-1$, forcing one root to have magnitude greater than 1 at every non-zero wavenumber (reaching $-(4 + \sqrt{17}) \approx -8.1$ for the sawtooth mode at $r = 1$).</p>
 
 <aside class="who" data-person="lewis-fry-richardson">In the 1910 paper (printed 1911) he solved partial differential equations by finite differences by hand, paying human computers piece rates. The extrapolation to zero mesh size from the same paper is in <a href="#/discretization/richardson">the discretisation chapter</a>.</aside>
 
@@ -228,11 +228,11 @@ export const chapter = {
 
 <div class="eq" id="eq-dufort">$$(1 + 2r)\,u_j^{n+1} = (1 - 2r)\,u_j^{n-1} + 2r\left(u_{j+1}^n + u_{j-1}^n\right)$$<span class="eq-tag">(9.11)</span></div>
 
-<p>and its amplification factors satisfy $|G| \le 1$ for every $r$. In the words of a 2021 paper by Galloway and Ivers, "DuFort–Frankel averaging is a tactic to stabilize Richardson's unstable three-level leapfrog timestepping scheme." An explicit scheme with no step limit sounds too good to be true, and it is. Expand the average in a Taylor series, $u_j^{n+1} + u_j^{n-1} = 2u_j^n + \Delta t^2\,u_{tt} + \ldots$, and the scheme turns out to approximate</p>
+<p>whose amplification factors satisfy $|G| \le 1$ for every $r > 0$. As Galloway and Ivers (2021) describe it, "DuFort–Frankel averaging is a tactic to stabilize Richardson's unstable three-level leapfrog timestepping scheme." Expanding the time average in a Taylor series around $(x_j, t^n)$, however, gives $u_j^{n+1} + u_j^{n-1} = 2u_j^n + \Delta t^2\,u_{tt} + \ldots$, so that (9.11) actually approximates</p>
 
 <div class="eq" id="eq-dufort-modified">$$u_t + \kappa\left(\frac{\Delta t}{\Delta x}\right)^2 u_{tt} = \kappa\,u_{xx} + \mathcal{O}(\Delta t^2, \Delta x^2)$$<span class="eq-tag">(9.12)</span></div>
 
-<p>That is its <dfn data-term="modified-equation">modified equation</dfn>. If you refine with $\Delta t/\Delta x$ fixed, the extra term never goes away: the scheme converges, but to a damped wave equation (the telegraph equation), not to the heat equation. It is <dfn data-term="consistency">consistent</dfn> with the heat equation only if $\Delta t/\Delta x \to 0$, for example with $r$ held fixed, which brings back the explicit cost it was meant to avoid. Lax and Richtmyer made the point in their 1956 survey: the scheme is always stable, but "the time increment must be limited on account of the consistency condition".</p>
+<p>This is its <dfn data-term="modified-equation">modified equation</dfn>. When the grid is refined at fixed $\Delta t/\Delta x$, the extra second-derivative term in time remains fixed and the scheme converges to a damped wave equation (the telegraph equation) rather than the heat equation. Du Fort–Frankel is <dfn data-term="consistency">consistent</dfn> with the heat equation only if $\Delta t/\Delta x \to 0$ as $\Delta x \to 0$—for example by holding $r$ fixed, which reimposes the $\Delta t \propto \Delta x^2$ scaling that the scheme was designed to avoid. As Lax and Richtmyer noted in their 1956 survey, the scheme is unconditionally stable, yet "the time increment must be limited on account of the consistency condition".</p>
 
 <div data-quiz="q5"></div>
 
@@ -297,7 +297,7 @@ export const chapter = {
         'Nothing visible: the sine decays as usual and the sawtooth with it.',
       ],
       answer: 1,
-      explain: 'Only the shortest waves are unstable, and they are hit hardest: $G(\\pi) = 1 - 4r = -1.08$, so the sawtooth changes sign and grows by 8% every step. Compounded, that is a factor of $10^3$ in about 90 steps. A small violation of a stability limit is not a small error; it is exponential growth of the modes the limit protects. The smooth sine, with $G \\approx 1 - r\\pi^2\\Delta x^2$, is computed perfectly well the whole time.',
+      explain: 'Only the shortest waves are unstable, and they are hit hardest: $G(\\pi) = 1 - 4r = -1.08$, so the sawtooth changes sign and grows by 8% every step. Compounded, that is a factor of $10^3$ in about 90 steps. Exceeding a stability threshold triggers exponential growth of the shortest grid modes, even while the smooth sine wave ($G \\approx 1 - r\\pi^2\\Delta x^2$) continues to decay accurately.',
     },
     q2: {
       type: 'num',
@@ -317,7 +317,7 @@ export const chapter = {
         'The step is under-resolved on 50 cells; any second-order scheme would ring there.',
       ],
       answer: 1,
-      explain: 'At $r = 10$, $G(\\pi) = (1-20)/(1+20) = -19/21$. The ringing is bounded and decays, so this is not instability; it is a mode that the exact solution kills at once and the scheme keeps. Backward Euler has $G(\\pi) = 1/41$, so the same modes vanish. A Rannacher start (two backward-Euler half steps) removes the ringing and keeps second order.',
+      explain: 'At $r = 10$, $G(\\pi) = (1-20)/(1+20) = -19/21$, so the sawtooth mode remains bounded and decays slowly while flipping sign each step, whereas the exact heat equation damps it immediately. Backward Euler has $G(\\pi) = 1/41$, eliminating the short-wavelength modes in a step or two, and a Rannacher start (two backward-Euler half steps) damps them while preserving second-order accuracy.',
     },
     q4: {
       type: 'mcq',
@@ -329,7 +329,7 @@ export const chapter = {
         'Its stiffness ratio is above 1,000.',
       ],
       answer: 1,
-      explain: 'Stiffness is a mismatch between the step accuracy needs and the step an explicit method can take. If the solution really changes fast, small steps are needed anyway and an explicit method is the right tool. A large ratio of eigenvalues is a warning sign but not a definition: what matters is whether you need to follow the fast modes. The Prothero–Robinson solution is just $\\cos t$, yet explicit Euler needs $h < 0.002$.',
+      explain: 'Stiffness is a mismatch between the step accuracy needs and the step an explicit method can take. If the solution really changes fast, small steps are needed anyway and an explicit method is the right tool. A large ratio of eigenvalues is a warning sign rather than a sufficient definition, because what matters is whether the fast modes must be resolved. The Prothero–Robinson solution is just $\\cos t$, yet explicit Euler needs $h < 0.002$.',
     },
     q5: {
       type: 'predict',
@@ -341,7 +341,7 @@ export const chapter = {
         'It blows up on the finer grids, where $r = n/2$ is large.',
       ],
       answer: 2,
-      explain: 'The scheme approximates $u_t + \\kappa(\\Delta t/\\Delta x)^2 u_{tt} = \\kappa u_{xx}$. With $\\Delta t/\\Delta x = 1/2$ the extra term never vanishes, so refining converges to that damped wave equation, whose amplitude at $t = 0.2$ is $-0.574$ instead of $+0.139$. Stability holds throughout. What fails is consistency, and the Lax equivalence theorem needs both.',
+      explain: 'The scheme approximates $u_t + \\kappa(\\Delta t/\\Delta x)^2 u_{tt} = \\kappa u_{xx}$. With $\\Delta t/\\Delta x = 1/2$ the extra term never vanishes, so refining converges to that damped wave equation, whose amplitude at $t = 0.2$ is $-0.574$ instead of $+0.139$. Stability holds throughout, whereas consistency fails along this refinement path, and the Lax equivalence theorem requires both.',
     },
   },
   glossary: {
@@ -387,7 +387,7 @@ export const chapter = {
     },
     'method-of-lines': {
       term: 'method of lines',
-      def: 'Discretise in space only, leaving a system of ODEs $\\mathrm{d}\\mathbf{u}/\\mathrm{d}t = A\\mathbf{u}$, then pick an ODE method for time. The eigenvalues of $A$ decide which time-steppers are stable at which step.',
+      def: 'Discretising a PDE in space alone to obtain a system of ODEs $\\mathrm{d}\\mathbf{u}/\\mathrm{d}t = A\\mathbf{u}$, which is then integrated in time with an ODE solver whose stability depends on the eigenvalues of $A$.',
       section: 'stiffness',
     },
     'stability-region': {
@@ -416,7 +416,7 @@ export const chapter = {
       diagnose: 'Compute $\\kappa\\Delta t\\sum_i 1/\\Delta x_i^2$ (it must be at most 1/2), using the largest diffusivity and smallest cells. Plot $\\max|u|$ against step on a log axis: a straight line means one unstable mode growing at a fixed rate.',
       mitigations: [
         'Limit the step: $\\Delta t \\le \\Delta x^2/(2d\\kappa)$ on a uniform grid in $d$ dimensions, computed alongside the CFL limit in adaptive codes.',
-        'Treat diffusion implicitly (backward Euler, Crank–Nicolson, BDF2), often only the diffusion term, with advection explicit (IMEX or operator splitting). Costs a linear solve per step.',
+        'Treat diffusion implicitly (backward Euler, Crank–Nicolson, BDF2), often pairing implicit diffusion with explicit advection (IMEX or operator splitting) so that each step requires one linear solve.',
         'Sub-cycle: take several explicit diffusion steps per advection step when the diffusive limit is only a few times tighter.',
         'Runge–Kutta–Chebyshev (super-time-stepping) methods, whose stability interval on the negative real axis grows like the square of the number of stages: useful for moderate stiffness.',
       ],
@@ -445,9 +445,9 @@ export const chapter = {
       family: 'stability',
       symptom: 'An explicit integrator explodes on a smooth, slowly varying solution, or survives only with absurdly small steps, long after the fast transient has gone. An adaptive solver keeps shrinking its step while its error estimates look tiny.',
       cause: 'A fast decaying mode with eigenvalue $\\lambda$ puts $h\\lambda$ outside the bounded stability region of every explicit method unless $h\\lambda$ stays within its real stability interval ($h \\le 2/|\\lambda|$ for Euler, $2.785/|\\lambda|$ for RK4). The mode need not be visible: rounding error seeds it.',
-      diagnose: 'Estimate the largest $|\\lambda|$ (the Jacobian\'s spectrum; $4\\kappa/\\Delta x^2$ for diffusion) and compare $h|\\lambda|$ with the method\'s stability interval. Halving $h$ from a failing run should cure it abruptly, not gradually.',
+      diagnose: 'Estimate the largest $|\\lambda|$ (the spectral radius of the Jacobian, or $4\\kappa/\\Delta x^2$ for 1D diffusion) and compare $h|\\lambda|$ with the method\'s stability interval; reducing $h$ just below the stability threshold eliminates the blow-up immediately.',
       mitigations: [
-        'Use an implicit L-stable method (BDF, Radau IIA, or backward Euler at low accuracy); stiff ODE libraries default to these. Costs a (Newton) linear solve per step.',
+        'Use an implicit L-stable method (BDF, Radau IIA, or backward Euler at low accuracy), which is the default in stiff ODE libraries and requires a linear or Newton solve per step.',
         'Treat only the stiff part implicitly (IMEX splitting), when it is linear or local, as with diffusion or fast chemistry.',
         'Remove the fast scale if it is not needed, for example with a quasi-steady approximation.',
         'For moderate stiffness, an explicit method with a long real stability interval (Runge–Kutta–Chebyshev).',
@@ -479,7 +479,7 @@ export const chapter = {
       cause: 'Du Fort–Frankel is stable for every $r$, but its truncation error contains $\\kappa(\\Delta t/\\Delta x)^2 u_{tt}$. Refined with $\\Delta t/\\Delta x$ fixed, that term survives, and the scheme approximates a damped wave equation instead of the heat equation.',
       diagnose: 'Run a refinement study along the path you will actually use (for example $\\Delta t \\propto \\Delta x$) against an exact or manufactured solution: the observed order is near zero or negative. Derive the modified equation.',
       mitigations: [
-        'Refine with $\\Delta t/\\Delta x \\to 0$ (for example $\\Delta t \\propto \\Delta x^2$), which gives back the explicit cost the scheme was meant to avoid.',
+        'Refine with $\\Delta t/\\Delta x \\to 0$ (for example $\\Delta t \\propto \\Delta x^2$), which reimposes the quadratic step-size scaling of an explicit diffusion solver.',
         'Use a consistent unconditionally stable scheme instead: backward Euler, Crank–Nicolson or BDF2.',
         'Check consistency and stability together (Lax equivalence): stability alone says nothing about the limit.',
       ],

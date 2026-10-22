@@ -93,7 +93,7 @@ export const chapter = {
         h('p.lede', chapter.blurb),
         h('p.ch-meta', `${all.length} pathologies from ${new Set(all.map((p) => p.chapter)).size} chapters`),
       ),
-      h('div.prose', h('p', 'Numerical methods fail in a small number of recognisable ways. Learn to spot the symptom and you can usually guess the cause before reading a line of code. Each card links back to the chapter that explains it.')),
+      h('div.prose', h('p', 'Numerical methods fail in a small number of recognisable ways. Recognising the visual or numerical symptom usually points directly to the underlying cause. Each card links back to the chapter that explains it.')),
       chips,
       grid,
     );

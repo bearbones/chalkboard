@@ -22,10 +22,10 @@ export const chapter = {
   id: 'solvers',
   title: 'Solving for pressure',
   short: 'Pressure solvers',
-  blurb: 'Jacobi, Gauss–Seidel, conjugate gradients and multigrid, and why smooth errors are slow to die.',
+  blurb: 'Jacobi, Gauss–Seidel, conjugate gradients, and multigrid, and why relaxation damps smooth errors slowly.',
   minutes: 45,
   html: String.raw`
-<p class="lead-in">Every step of an incompressible simulation ends with the same chore: find the pressure that makes the velocity divergence-free. <a href="#/pressure/projection">The last chapter</a> set that problem up. This one is about solving it, which is where most of the computer time goes. You will meet the simple methods first. They update one cell at a time from its neighbours, and you will see exactly why they stall: they remove rough errors quickly and smooth errors painfully slowly. Then come the two ideas that rescued the field. Multigrid treats smooth error on coarser grids, where it is no longer smooth. Conjugate gradients chooses each step so that it never undoes the steps before it. The chapter ends with a race and a bill: what each method costs as the grid is refined, and what a loose tolerance does to a running simulation.</p>
+<p class="lead-in">Every step of an incompressible projection solver requires finding the pressure field that makes the velocity divergence-free. <a href="#/pressure/projection">The previous chapter</a> formulated that elliptic boundary-value problem; this chapter examines the algorithms that solve it, which account for most of the runtime in an incompressible code. The simplest iterative methods update one cell at a time from its neighbours, damping grid-scale oscillations in a few sweeps while leaving smooth, long-wavelength errors nearly unchanged. Two main approaches overcome that slowdown. Multigrid transfers smooth residuals onto coarser grids where they appear oscillatory and decay rapidly, while conjugate gradients chooses each search direction to be $A$-orthogonal to all previous directions so that earlier progress is never undone. The final section compares how these solvers scale as the grid is refined and measures the volume drift introduced when the pressure solve is stopped at a loose tolerance.</p>
 
 <h2 id="the-system">One equation per cell</h2>
 
@@ -33,27 +33,27 @@ export const chapter = {
 
 <div class="eq" id="eq-five-point">$$\frac{4p_{i,j} - p_{i-1,j} - p_{i+1,j} - p_{i,j-1} - p_{i,j+1}}{h^2} = b_{i,j}$$<span class="eq-tag">(11.1)</span></div>
 
-<p>Here $b_{i,j} = -(\nabla_h\cdot\mathbf{u}^*)_{i,j}/\Delta t$ for a fluid of unit density; the minus signs make the matrix positive. This is the discrete <dfn data-term="pressure-poisson">pressure Poisson equation</dfn>. Next to a wall the missing neighbour drops out and the 4 becomes 3 or 2. Gather the pressures of an $n \times n$ grid into one vector $\mathbf{p}$ of $N = n^2$ unknowns, and the equations become one linear system, $A\mathbf{p} = \mathbf{b}$.</p>
+<p>Here $b_{i,j} = -(\nabla_h\cdot\mathbf{u}^*)_{i,j}/\Delta t$ for a fluid of unit density; the minus signs make the matrix positive. This is the discrete <dfn data-term="pressure-poisson">pressure Poisson equation</dfn>. Next to a wall the missing neighbour drops out and the 4 becomes 3 or 2. Collecting the pressures of an $n \times n$ grid into a vector $\mathbf{p}$ of $N = n^2$ unknowns writes these cell equations as a single linear system, $A\mathbf{p} = \mathbf{b}$.</p>
 
-<p>The matrix $A$ has three properties that everything in this chapter uses.</p>
+<p>The matrix $A$ has three structural properties that the solvers in this chapter exploit:</p>
 <ul>
-<li>It is <strong>sparse</strong>: at most five nonzeros in a row of length $N$. A code never stores it. It only ever applies the stencil, which is why the solvers here are called matrix-free.</li>
-<li>It is <strong>symmetric</strong>: cell $c$ feels cell $d$ exactly as $d$ feels $c$.</li>
-<li>It is <strong>positive definite</strong> when some boundary fixes the pressure level, for example an open side. In a closed box it is only semi-definite: adding a constant to every pressure changes nothing, so the constants are a null space, and a solution exists only if $\mathbf{b}$ sums to zero. That is the <dfn data-term="compatibility-condition">compatibility condition</dfn> of the last chapter. Every solver below first removes the mean of $\mathbf{b}$, as the course's solvers do.</li>
+<li><strong>Sparse</strong>: each row of length $N$ has at most five nonzero entries, so matrix-free solvers apply the five-point stencil directly without storing $A$ as a matrix.</li>
+<li><strong>Symmetric</strong>: the coupling coefficient between adjacent cells $c$ and $d$ is identical in both directions.</li>
+<li><strong>Positive definite</strong> when at least one boundary fixes the pressure level (such as an open Dirichlet boundary), and positive semi-definite in a closed box where constant vectors form a one-dimensional null space. In the closed case a solution exists only when $\mathbf{b}$ satisfies the <dfn data-term="compatibility-condition">compatibility condition</dfn> $\sum_c b_c = 0$ from the previous chapter, so every solver below first subtracts the mean of $\mathbf{b}$.</li>
 </ul>
 
-<p>Why is this the bottleneck of an incompressible code? The equation is elliptic: every pressure depends on every divergence in the domain, at once. A push at one wall changes the pressure at the other, as <a href="#/pressure/constraint">the first figure of the last chapter</a> showed. So there is no local shortcut. Advection and forces touch each cell a fixed number of times per step; the pressure solve has to move information across the whole grid, every step.</p>
+<p>Solving $A\mathbf{p} = \mathbf{b}$ dominates the cost of an incompressible step because the Poisson equation is elliptic, coupling every cell's pressure to the divergence across the entire domain at once, as <a href="#/pressure/constraint">the first figure of the previous chapter</a> showed. Whereas explicit advection and body forces read only a local neighbourhood of each cell a fixed number of times per step, the pressure solve must propagate information across the full width of the grid every step.</p>
 
-<p>The obvious approach is <strong>direct</strong>: Gaussian elimination, or its symmetric form, Cholesky factorisation $A = LL^{\mathrm{T}}$, followed by two triangular solves. Treated as a dense matrix, $A$ costs about $N^3/3$ multiply–adds to factorise. For a $1000 \times 1000$ grid, $N = 10^6$, that is $3 \times 10^{17}$, and $10^{12}$ numbers to store. Nobody does that. Number the cells row by row instead, and $A$ is banded: every nonzero lies within $n$ places of the diagonal. Elimination never creates nonzeros outside the band, but it fills the band in, as the figure shows. $L$ then holds about $N n = n^3$ numbers and costs about $N n^2/2 = n^4/2$ multiply–adds: for $n = 1000$, $10^9$ numbers (8 gigabytes) and $5 \times 10^{11}$ operations. Cleverer numberings help. Nested dissection, analysed by George in 1973, numbers each half of the grid before the line of cells that separates them, recursively, and brings the two-dimensional cost down to $O(n^3)$ operations and $O(n^2\log n)$ storage. (In three dimensions the fill is far worse.)</p>
+<p>A <strong>direct</strong> solver computes an exact factorisation—Gaussian elimination, or for symmetric positive definite matrices the Cholesky factorisation $A = LL^{\mathrm{T}}$—followed by forward and backward triangular solves. Treating $A$ as a dense $N \times N$ matrix would require about $N^3/3$ multiply–adds and $N^2$ words of storage ($3 \times 10^{17}$ operations and $10^{12}$ numbers on a $1000 \times 1000$ grid with $N = 10^6$). Numbering the cells row by row instead makes $A$ banded, with every nonzero entry within $n$ columns of the diagonal. Cholesky elimination creates no nonzeros outside the band, but it fills in the entries inside the band, as the figure below shows. The factor $L$ then stores about $N n = n^3$ nonzeros and requires about $N n^2/2 = n^4/2$ multiply–adds—at $n = 1000$, roughly $10^9$ double-precision numbers (8 gigabytes) and $5 \times 10^{11}$ operations. Reordering the unknowns by nested dissection (George, 1973), which recursively numbers two halves of the grid before the separator line of cells between them, reduces the two-dimensional factorisation cost to $O(n^3)$ operations and $O(n^2\log n)$ storage, though fill-in grows much faster in three dimensions.</p>
 
 <figure data-widget="solvers-fill" class="wide"><figcaption>The Cholesky factor of the five-point matrix, measured. Lower half of $A$ on the left, $L$ on the right; lighter entries are fill, zeros of $A$ that elimination turned into nonzeros. The plot counts nonzeros for every $n$ from 4 to 32. Row by row, $L$ fills the band and grows like $n^3$; nested dissection grows more slowly.</figcaption></figure>
 <div class="try"><ol>
 <li>Drag $n$ from 4 to 32 with the row-by-row numbering. The band in $L$ fills completely: at $n = 24$ the factor has 13,847 nonzeros, against 1,680 in the lower half of $A$ and $Nn = 13{,}824$ for a full band.</li>
 <li>Switch to nested dissection at $n = 24$. The fill drops to 7,690, and the gap widens as $n$ grows. The fitted growth readout compares the two.</li>
-<li>Look at the numbers of multiply–adds: they grow faster than the fill, about $n^4/2$ row by row.</li>
+<li>Look at the numbers of multiply–adds, which grow faster than the fill at roughly $n^4/2$ under row-by-row numbering.</li>
 </ol></div>
 
-<p>Direct solvers are not hopeless. If the grid and its solid cells never change, the factor can be computed once and reused every step, and sparse direct solvers do well on small two-dimensional problems. But $L$ must be recomputed whenever an obstacle moves or a free surface changes which cells hold fluid, and its memory grows faster than the grid. The alternative is <strong>iterative</strong>: start from a guess and improve it. Each iteration costs a few operations per cell and needs a few vectors of storage. The previous time step's pressure is an excellent first guess. And you can stop as soon as the answer is good enough. The whole question is then how many iterations "good enough" takes, and how that number grows with $n$.</p>
+<p>When the domain geometry and solid boundaries are fixed, $L$ can be factorised once during preprocessing and reused for two triangular solves at every step, making sparse direct solvers practical on moderate two-dimensional grids. Whenever a moving solid or a free surface changes the set of active fluid cells, however, $L$ must be refactorised, and its storage grows superlinearly with $N$. <strong>Iterative</strong> solvers avoid factorisation by starting from an initial guess—often the pressure from the previous time step—and updating it in place using only a few operations per cell and a few vectors of memory, stopping once the residual falls below a chosen tolerance. Their efficiency depends on how many iterations are needed to reach that tolerance, and how that count scales with the grid size $n$.</p>
 
 <aside class="who" data-person="simeon-denis-poisson">In a note of December 1813 he showed that inside an attracting mass the potential obeys an equation with a source term, $\nabla^2 V = -4\pi\rho$ in his sign convention, and not Laplace's equation. In a fluid solver the source is the divergence of the provisional velocity.</aside>
 
@@ -61,23 +61,23 @@ export const chapter = {
 
 <h2 id="relaxation">Relaxation: fix one cell at a time</h2>
 
-<p>Here is the simplest idea there is. Pick a cell. Its equation (11.1) is not satisfied by the current guess. Change that cell's pressure so that its own equation holds exactly, with the neighbours as they are. Then move to the next cell. Each fix spoils the equations of the neighbours a little, so one pass over the grid is not enough; you go round again, and again. Engineers did this by hand from the 1930s on, as Southwell's "relaxation", choosing at each step the cell whose equation was worst. Machines do it in a fixed order, and the order turns out to matter.</p>
+<p>The simplest iterative methods are relaxation schemes, which adjust one cell's pressure at a time so that its local five-point equation (11.1) holds for the current neighbour values. Because updating one cell alters the balance at its four neighbours, the sweep must be repeated over the grid until the equations are satisfied everywhere to tolerance. Beginning in the 1930s, engineers carried out this process by hand as Southwell's relaxation method, scanning for the cell with the largest residual and adjusting it first; on a computer the cells are visited in a fixed sweep order, and that ordering determines both the convergence rate and the available parallelism.</p>
 
 <p><dfn data-term="jacobi-method">Jacobi's method</dfn> updates every cell from the old values of its neighbours:</p>
 
 <div class="eq" id="eq-jacobi">$$\begin{aligned} p_{i,j}^{(k+1)} = \frac{1}{4}\Big(&p_{i-1,j}^{(k)} + p_{i+1,j}^{(k)} \\ &+ p_{i,j-1}^{(k)} + p_{i,j+1}^{(k)} + h^2 b_{i,j}\Big) \end{aligned}$$<span class="eq-tag">(11.2)</span></div>
 
-<p>Every cell can be done at the same time, which suits parallel hardware. Weighted Jacobi moves only a fraction $\omega$ of the way: $p^{(k+1)} = p^{(k)} + \omega\,(p^{\text{Jacobi}} - p^{(k)})$. <dfn data-term="gauss-seidel">Gauss–Seidel</dfn> uses each new value as soon as it exists. Sweeping row by row from the bottom left, the neighbours to the left and below have already been updated:</p>
+<p>Every cell can be updated simultaneously, which suits parallel hardware. Weighted Jacobi moves a fraction $\omega$ of the way toward the Jacobi update, $p^{(k+1)} = p^{(k)} + \omega\,(p^{\text{Jacobi}} - p^{(k)})$. <dfn data-term="gauss-seidel">Gauss–Seidel</dfn> instead uses each updated value as soon as it is computed; sweeping row by row from the bottom left, the neighbours to the left and below already hold their new values:</p>
 
 <div class="eq" id="eq-gauss-seidel">$$\begin{aligned} p_{i,j}^{(k+1)} = \frac{1}{4}\Big(&p_{i-1,j}^{(k+1)} + p_{i+1,j}^{(k)} \\ &+ p_{i,j-1}^{(k+1)} + p_{i,j+1}^{(k)} + h^2 b_{i,j}\Big) \end{aligned}$$<span class="eq-tag">(11.3)</span></div>
 
-<p>It costs the same per sweep, needs no second copy of the grid, and on this problem converges about twice as fast. On a $16 \times 16$ grid with $p = 0$ on the walls, cutting the residual by $10^6$ takes 564 Jacobi sweeps and 265 Gauss–Seidel sweeps. The price is that the cells must be done in order. <dfn data-term="red-black-ordering">Red–black ordering</dfn> gets parallelism back. Colour the cells like a chessboard. A red cell's four neighbours are all black, so all the red cells can be updated at once, then all the black ones. It is still Gauss–Seidel, just in a different order, and it converges at the same rate: 264 sweeps on the same problem.</p>
+<p>Gauss–Seidel performs the same arithmetic per sweep as Jacobi, overwrites a single pressure array in place, and converges in roughly half as many sweeps—on a $16 \times 16$ Dirichlet problem ($p = 0$ on the walls), reducing the residual by $10^6$ takes 265 Gauss–Seidel sweeps compared with 564 for Jacobi. Because each update depends on two just-computed neighbours, lexicographic row-by-row sweeping is sequential, but <dfn data-term="red-black-ordering">red–black ordering</dfn> restores parallelism by partitioning the cells by the chessboard parity of $i + j$. Since every red cell's four neighbours are black, all red cells can be updated in parallel using the current black values, followed by all black cells using the new red values, achieving the same convergence rate (264 sweeps on the $16 \times 16$ Dirichlet test).</p>
 
-<p>Before you run the next figure, one more distinction. The <dfn data-term="residual">residual</dfn> $\mathbf{r} = \mathbf{b} - A\mathbf{p}$ says how badly the current guess fails the equations, and you can compute it at any time. The error $\mathbf{e} = \mathbf{p}^* - \mathbf{p}$ is how far the guess is from the true answer $\mathbf{p}^*$, and you never know it, because you do not know $\mathbf{p}^*$. The two are linked by the matrix itself:</p>
+<p>Tracking convergence requires distinguishing two vectors. The <dfn data-term="residual">residual</dfn> $\mathbf{r} = \mathbf{b} - A\mathbf{p}$ measures the discrepancy in the discrete equations and can be evaluated on every sweep, whereas the algebraic error $\mathbf{e} = \mathbf{p}^* - \mathbf{p}$ measures the distance to the exact discrete solution $\mathbf{p}^*$ and is unknown during a solve. The two are related through $A$:</p>
 
 <div class="eq" id="eq-residual">$$\begin{aligned} A\mathbf{e} &= \mathbf{r}, \\ \frac{\|\mathbf{e}\|}{\|\mathbf{p}^*\|} &\le \kappa(A)\,\frac{\|\mathbf{r}\|}{\|\mathbf{b}\|}, \qquad \kappa(A) = \frac{\lambda_{\max}}{\lambda_{\min}} \end{aligned}$$<span class="eq-tag">(11.4)</span></div>
 
-<p>The condition number $\kappa$ is the ratio of the largest to the smallest eigenvalue of $A$ (the smallest nonzero one in a closed box). For the five-point matrix it grows like $n^2$: about 206 on a $16 \times 16$ closed box and 13,279 on a $128 \times 128$ one. So a small residual does not promise a small error. Every solver stops on the residual, because that is all it has.</p>
+<p>Here the condition number $\kappa(A)$ is the ratio of the largest to the smallest eigenvalue of $A$ (taking the smallest nonzero eigenvalue in a closed box). For the five-point Laplacian, $\kappa(A)$ scales as $O(n^2)$, growing from about 206 on a $16 \times 16$ closed box to 13,279 at $128 \times 128$. Because $\kappa(A)$ is large, a small residual norm does not guarantee a comparably small error norm, even though practical stopping criteria must test $\|\mathbf{r}\|/\|\mathbf{b}\|$.</p>
 
 <div data-quiz="q2"></div>
 
@@ -89,13 +89,13 @@ export const chapter = {
 <li>Try SOR (next paragraph). It needs 59 sweeps where Gauss–Seidel needs 561.</li>
 </ol></div>
 
-<p>Jacobi in this figure uses $\omega = 0.8$, not 1. On a closed box, plain Jacobi cannot damp one pattern at all: the <a href="#/pressure/checkerboard">checkerboard</a> $(-1)^{i+j}$. For that pattern the average of the four neighbours is exactly minus the cell's own value, so each sweep flips its sign and keeps its size. After 200 sweeps on the $16 \times 16$ box, plain Jacobi has a residual of 0.074, and $\omega = 0.8$ has 0.026. The next section shows why.</p>
+<p>The Jacobi option in this figure uses under-relaxation with $\omega = 0.8$ rather than unweighted Jacobi ($\omega = 1$). On a closed box, unweighted Jacobi fails to damp the <a href="#/pressure/checkerboard">checkerboard</a> mode $(-1)^{i+j}$, because the average of the four neighbours equals minus the cell's own value, so every sweep flips the sign of the mode while preserving its amplitude. After 200 sweeps on the $16 \times 16$ closed box, unweighted Jacobi leaves a relative residual of 0.074, whereas weighted Jacobi with $\omega = 0.8$ reaches 0.026, for reasons the Fourier mode analysis in the next section makes explicit.</p>
 
-<p>Gauss–Seidel can be pushed further. Since each update moves a cell in the right direction but not far enough, move it further: <dfn data-term="sor">successive over-relaxation</dfn> (SOR) takes the Gauss–Seidel value and overshoots,</p>
+<p>Because each Gauss–Seidel update moves a cell only partway toward its converged value when smooth error dominates, <dfn data-term="sor">successive over-relaxation</dfn> (SOR) accelerates convergence by extrapolating past the Gauss–Seidel update by a relaxation factor $\omega \in (1, 2)$:</p>
 
 <div class="eq" id="eq-sor">$$\begin{aligned} p_{i,j}^{(k+1)} &= p_{i,j}^{(k)} + \omega\left(p_{i,j}^{\text{GS}} - p_{i,j}^{(k)}\right), \\ \omega_{\text{opt}} &= \frac{2}{1 + \sqrt{1 - \rho_J^2}} \end{aligned}$$<span class="eq-tag">(11.5)</span></div>
 
-<p>with $1 < \omega < 2$. Here $\rho_J$ is the spectral radius of Jacobi's iteration, the factor by which its slowest error shrinks per sweep. Young's formula for the best $\omega$ holds for matrices like this one. On the $16 \times 16$ closed box, $\rho_J = 0.9904$ and $\omega_{\text{opt}} = 1.757$, and SOR needs 59 sweeps instead of 561. That is the difference between a cost that grows like $n^2$ and one that grows like $n$. The catch is in the next figure.</p>
+<p>Here $\rho_J$ is the spectral radius of the Jacobi iteration matrix, the per-sweep decay factor of its slowest-converging mode. Young's formula for $\omega_{\text{opt}}$ holds for consistently ordered matrices such as the five-point Laplacian. On the $16 \times 16$ closed box, $\rho_J = 0.9904$ gives $\omega_{\text{opt}} = 1.757$, reducing the sweep count from 561 for Gauss–Seidel to 59 for optimal SOR and improving the asymptotic scaling from $O(n^2)$ sweeps to $O(n)$. As the next figure illustrates, however, that speedup is sensitive to the choice of $\omega$.</p>
 
 <figure data-widget="solvers-sor" class="wide"><figcaption>Left: sweeps for SOR to cut the residual by $10^6$ on a closed box, for $\omega$ from 0.5 to 1.98, each point a full solve. The dashed line is Young's predicted optimum. Right: the residual history at the $\omega$ on the slider, against Gauss–Seidel.</figcaption></figure>
 <div class="try"><ol>
@@ -105,9 +105,9 @@ export const chapter = {
 <li>Switch to $32 \times 32$. The optimum moves to 1.870, and the old $\omega$ is now too small. The best $\omega$ depends on the grid and on the shape of the domain, which you rarely know in advance.</li>
 </ol></div>
 
-<aside class="pitfall">A fixed $\omega$ tuned on one grid is wrong on the next, and the penalty is lopsided: a little too large costs far more than a little too small. Above 2 SOR diverges. See <a href="#/pathologies">the rogues' gallery</a> entry on a badly chosen $\omega$.</aside>
+<aside class="pitfall">An over-relaxation factor $\omega$ tuned on one grid is suboptimal on a finer grid, and the sensitivity around $\omega_{\text{opt}}$ is asymmetric—overshooting $\omega_{\text{opt}}$ degrades convergence much more steeply than undershooting it, while $\omega \ge 2$ diverges. See <a href="#/pathologies">the rogues' gallery</a> entry on a badly chosen $\omega$.</aside>
 
-<p>One more unit before the comparison gets serious. A <dfn data-term="work-unit">work unit</dfn> is one pass of the stencil over the whole grid: a relaxation sweep, or one product $A\mathbf{x}$. It is the fair currency for comparing methods whose iterations cost different amounts. Every method above costs one work unit per sweep.</p>
+<p>To compare solvers whose iterations do different amounts of arithmetic, work is measured in <dfn data-term="work-unit">work units</dfn>, where one work unit equals the cost of a single fine-grid stencil pass—one relaxation sweep or one matrix–vector product $A\mathbf{x}$. Each of the relaxation methods above performs one work unit per sweep.</p>
 
 <aside class="history" data-era="1823">The names are loose. Gauss described an indirect way of solving least-squares equations in a letter to Gerling dated 26 December 1823; Jacobi published his iteration in 1845 (some histories date it 1846), combined with plane rotations, so the textbook method simplifies what he did; Seidel published his in 1874. Both Gauss and Seidel corrected the unknown with the largest residual first, by hand, and Seidel advised against a fixed cyclic order. Saad and van der Vorst (2000), citing Householder (1964), record that "Forsythe is quoted as having stated that 'the Gauss-Seidel method was not known to Gauss and not recommended by Seidel'". Southwell's relaxation, from 1935 on, was the same hand method grown into a craft for framed structures and then for fields.</aside>
 
@@ -119,62 +119,62 @@ export const chapter = {
 
 <h2 id="smoothing">Why relaxation stalls</h2>
 
-<p>The sweep figure showed the symptom: the residual collapses, then the error sits there. To see why, think of the error as a sum of waves. A rough wave, one that changes sign from cell to cell, has a large residual, because the stencil compares each cell with its neighbours and they disagree strongly. A relaxation step sees that disagreement and fixes it. A smooth wave, one that changes slowly across many cells, looks locally almost like a solution. Each cell is nearly the average of its neighbours, the residual is tiny, and a local update can only nudge it. Relaxation is a local method, and smooth error is a global problem.</p>
+<p>In the sweep figure above, the residual drops rapidly during the first few passes while the remaining error settles into a smooth profile that decays very slowly. Decomposing the error into spatial Fourier modes explains this behaviour. An oscillatory mode that alternates in sign from cell to cell produces a large residual because each cell differs strongly from the average of its neighbours, so a local relaxation update damps it immediately. A smooth mode that varies slowly across many cells is already close to the average of its four neighbours at every point, producing a tiny local residual and receiving only an $O(h^2)$ adjustment per sweep.</p>
 
-<p>You can make that exact on the one-dimensional version of the problem: $n$ points between two walls with the error held at zero on both, and the stencil $(2e_j - e_{j-1} - e_{j+1})/h^2$ with $h = 1/(n+1)$. Write the error as a sum of sine modes, $e_j = \sum_k a_k \sin\big(jk\pi/(n+1)\big)$, where mode $k = 1$ is one smooth hump and $k = n$ is a sawtooth. For weighted Jacobi the sine modes are eigenvectors: each sweep multiplies mode $k$ by its own factor and leaves the others alone.</p>
+<p>This mode-by-mode decay can be calculated explicitly on the one-dimensional model problem with $n$ interior points between two Dirichlet walls ($e_0 = e_{n+1} = 0$) and grid spacing $h = 1/(n+1)$, where the discrete operator is $(2e_j - e_{j-1} - e_{j+1})/h^2$. Expanding the error in discrete sine modes $e_j = \sum_{k=1}^n a_k \sin\big(jk\pi/(n+1)\big)$—from the half-sine hump $k = 1$ to the grid-scale sawtooth $k = n$—diagonalises the weighted Jacobi iteration, so each sweep multiplies the $k$-th mode amplitude $a_k$ by an eigenvalue $\lambda_k$ without coupling different modes:</p>
 
 <div class="eq" id="eq-mode-factor">$$a_k \leftarrow \lambda_k\,a_k, \qquad \lambda_k = 1 - 2\omega\sin^2\!\left(\frac{k\pi}{2n+2}\right)$$<span class="eq-tag">(11.6)</span></div>
 
 <details class="deeper"><summary>Go deeper: where the factor comes from</summary>
-<p>Weighted Jacobi on $A\mathbf{e} = 0$ replaces each $e_j$ by $(1-\omega)e_j + \tfrac{\omega}{2}(e_{j-1} + e_{j+1})$. Put in $e_j = \sin(j\theta)$ with $\theta = k\pi/(n+1)$. The identity $\sin((j-1)\theta) + \sin((j+1)\theta) = 2\cos\theta\,\sin(j\theta)$ gives</p>
+<p>On the homogeneous error equation $A\mathbf{e} = 0$, weighted Jacobi replaces each $e_j$ by $(1-\omega)e_j + \tfrac{\omega}{2}(e_{j-1} + e_{j+1})$. Substituting $e_j = \sin(j\theta)$ with $\theta = k\pi/(n+1)$ and applying the trigonometric identity $\sin((j-1)\theta) + \sin((j+1)\theta) = 2\cos\theta\,\sin(j\theta)$ gives</p>
 <p>$$(1-\omega)\sin(j\theta) + \omega\cos\theta\,\sin(j\theta) = \left(1 - \omega(1 - \cos\theta)\right)\sin(j\theta) = \left(1 - 2\omega\sin^2\tfrac{\theta}{2}\right)\sin(j\theta).$$</p>
-<p>The sine vanishes at $j = 0$ and $j = n+1$, so the boundary conditions hold for free, and the mode comes back multiplied by $\lambda_k$. For the smoothest mode, $\sin^2(\pi/(2n+2)) \approx \pi^2h^2/4$, so $\lambda_1 \approx 1 - \omega\pi^2h^2/2$. Cutting it tenfold takes $\ln 10/(\omega\pi^2h^2/2)$ sweeps, which grows like $n^2$. In two dimensions the modes are products of sines and the same algebra gives the same conclusion.</p>
+<p>Because $\sin(j\theta)$ vanishes at $j = 0$ and $j = n+1$, it satisfies the homogeneous Dirichlet boundary conditions automatically and is an exact eigenvector with amplification factor $\lambda_k$. For the smoothest mode ($k = 1$), $\sin^2(\pi/(2n+2)) \approx \pi^2h^2/4$, so $\lambda_1 \approx 1 - \omega\pi^2h^2/2$; reducing its amplitude by a factor of 10 therefore requires about $\ln 10/(\omega\pi^2h^2/2)$ sweeps, which scales as $O(n^2)$. In two dimensions the eigenmodes are products of sines and obey the same $O(n^2)$ scaling.</p>
 </details>
 
-<p>Read the formula from both ends. For the smoothest mode, $\lambda_1$ is $1$ minus something of order $h^2$. With $n = 31$ and $\omega = 2/3$ it is 0.99679, and a tenfold cut takes 716 sweeps. Halve $h$ and it takes four times as many: 179 at $n = 15$, 2,866 at $n = 63$. For the rough half of the modes ($k > n/2$), $\sin^2$ is between $\tfrac12$ and 1, and with $\omega = 2/3$ every factor lies between $-\tfrac13$ and $\tfrac13$. Three sweeps cut every rough mode at least 27-fold, on any grid. The choice of $\omega$ matters. With $\omega = 1$, plain Jacobi, the sawtooth has $\lambda_n = -0.9952$ at $n = 31$: it flips sign every sweep and hardly shrinks. With $\omega > 1$ the roughest modes have $|\lambda_k| > 1$ and grow. That is the checkerboard trap of the last section, in one dimension.</p>
+<p>At the low-wavenumber end of the spectrum ($k = 1$), $\lambda_1 = 1 - O(h^2)$; for $n = 31$ and $\omega = 2/3$, $\lambda_1 = 0.99679$, so a tenfold reduction requires 716 sweeps, and halving $h$ quadruples that count from 179 sweeps at $n = 15$ to 2,866 at $n = 63$. Across the upper half of the spectrum ($k > n/2$), by contrast, $\sin^2(k\pi/(2n+2))$ lies between $\tfrac12$ and 1; choosing $\omega = 2/3$ places $\lambda_k$ in $[-\tfrac13, \tfrac13]$ for every oscillatory mode, so three sweeps reduce all of them by at least a factor of 27 regardless of $n$. That high-frequency damping depends on the under-relaxation weight $\omega$; for unweighted Jacobi ($\omega = 1$) at $n = 31$, the sawtooth mode $k = n$ has $\lambda_n = -0.9952$, flipping sign on each sweep while barely decaying, and for $\omega > 1$ the highest modes have $|\lambda_k| > 1$ and amplify—the one-dimensional counterpart of the closed-box checkerboard oscillation seen in the previous section.</p>
 
 <div data-quiz="q3"></div>
 
 <figure data-widget="solvers-modes" class="wide"><figcaption>The one-dimensional model problem, relaxed. Top left: the error now and at the start. Bottom left: the size of each sine mode of the error (bars) and at the start (ticks), on a log scale. Right: the factor one sweep applies to each mode, measured from a pure mode (points), with the analytic Jacobi factor (11.6) as a dashed curve. The shaded band is the rough half of the modes.</figcaption></figure>
 <div class="try"><ol>
 <li>Run the default (smooth plus wiggly, $\omega = 2/3$). After 10 sweeps the roughest mode is down to $1.5 \times 10^{-5}$ of its size; the smooth hump has lost 3%.</li>
-<li>Choose the highest mode and set $\omega = 1$. The sawtooth flips every sweep and barely shrinks. Set $\omega = 2/3$: it is gone in a few sweeps.</li>
+<li>Choose the highest mode and set $\omega = 1$. The sawtooth flips every sweep and barely shrinks. Set $\omega = 2/3$, and it disappears in a few sweeps.</li>
 <li>Set $\omega = 1.1$ with the smooth-plus-wiggly start. The roughest modes now grow.</li>
 <li>Choose "smooth error", then compare $n = 15$, 31 and 63. The readout of sweeps needed to cut mode 1 tenfold quadruples each time.</li>
-<li>Try Gauss–Seidel. The modes now mix, but the picture is the same: the rough half dies fast (factor 0.19 at the middle mode, $-0.33$ at the roughest) and the smoothest mode keeps 0.990 of itself per sweep.</li>
+<li>Try Gauss–Seidel. Although the modes now couple across wavenumbers, the behaviour is similar, with the oscillatory half decaying rapidly (factor 0.19 at the middle mode, $-0.33$ at the roughest) while the smoothest mode retains 0.990 of its amplitude per sweep.</li>
 </ol></div>
 
-<p>So relaxation is not really a solver. It is a <dfn data-term="smoothing">smoother</dfn>: a few sweeps remove the rough part of the error, quickly and on any grid, and leave the smooth part almost untouched. The best weight for this job is $\omega = 2/3$ in one dimension and $\omega = 4/5$ in two, the values that make the worst factor over the rough half as small as possible. On the two-dimensional pressure problem the stall is the same. The number of sweeps needed grows like $n^2$, with fitted exponents of 1.90 for Jacobi and Gauss–Seidel between $16^2$ and $128^2$ in the race at the end of the chapter.</p>
+<p>Because a few relaxation sweeps damp the high-wavenumber components of the error by a grid-independent factor while leaving the low-wavenumber components nearly unchanged, relaxation acts primarily as a <dfn data-term="smoothing">smoother</dfn>. Minimising the worst-case amplification factor across the oscillatory half of the spectrum gives the optimal weighted-Jacobi smoothing parameter $\omega = 2/3$ in one dimension and $\omega = 4/5$ in two dimensions. Used alone as a solver on the two-dimensional pressure problem, relaxation requires $O(n^2)$ sweeps to damp the smoothest mode, with a measured scaling exponent of 1.90 for both Jacobi and Gauss–Seidel across grids from $16^2$ to $128^2$.</p>
 
-<aside class="pitfall">A slowly converging relaxation solver is not a bug in the code: it is the smooth error doing what (11.6) says. Adding sweeps only buys time, at a cost that grows like $n^2$. See <a href="#/pathologies">the rogues' gallery</a> entry on relaxation stall, and read on for the cure.</aside>
+<aside class="pitfall">When a Jacobi or Gauss–Seidel solver makes rapid initial progress and then stalls, the slowdown follows directly from the $1 - O(h^2)$ decay factor of the smooth error modes in (11.6) rather than from a coding error. Raising the sweep count requires $O(n^2)$ work as the grid is refined; see <a href="#/pathologies">the rogues' gallery</a> entry on relaxation stall.</aside>
 
 <h2 id="multigrid">Multigrid: smooth error is rough somewhere else</h2>
 
-<p>Take an error that relaxation has smoothed. Sample it on a grid with cells twice as wide. It is still well represented: a smooth hump needs few points. But on the coarse grid it looks twice as rough as it did, because each coarse cell spans twice the distance. Relaxation there damps it faster, and costs a quarter as much, since the coarse grid has a quarter of the cells. Repeat on a grid coarser still, and again, until the grid has so few cells that it can be solved exactly. That is <dfn data-term="multigrid">multigrid</dfn>: each grid size handles the part of the error that looks rough to it.</p>
+<p>Once relaxation has damped the oscillatory components on the fine grid, the remaining smooth error varies slowly enough to be represented accurately on a coarser grid with cell width $2h$. Relative to that doubled grid spacing, every spatial wavelength appears twice as oscillatory—halving $n$ in (11.6) quadruples the decay rate of the smoothest mode while reducing the number of cells in two dimensions by a factor of four. Applying this coarsening recursively down a hierarchy of grids until the coarsest grid has only a few unknowns and can be solved directly gives <dfn data-term="multigrid">multigrid</dfn>, in which each grid level damps the error wavelengths comparable to its own cell size.</p>
 
-<p>The coarse grid cannot solve for the pressure itself: it would make the same mistakes, coarsely. It solves for the correction. After smoothing on the fine grid, compute the residual, carry it down, solve the residual equation (11.4) there, and carry the correction back up:</p>
+<p>Because the error $\mathbf{e}$ and the residual $\mathbf{r} = \mathbf{b} - A\mathbf{p}$ satisfy the linear residual equation $A\mathbf{e} = \mathbf{r}$ from (11.4), the coarse grid solves for the smooth error correction rather than re-solving for the pressure from scratch. After smoothing on the fine grid, the solver evaluates the residual $\mathbf{r}$, transfers it to the coarse grid with spacing $2h$, solves the coarse residual equation there, and interpolates the resulting correction back to update the fine-grid pressure:</p>
 
 <div class="eq" id="eq-coarse-correction">$$\begin{aligned} \mathbf{r} &= \mathbf{b} - A\mathbf{p}, \\ A_{2h}\,\mathbf{e}_{2h} &= R\,\mathbf{r}, \\ \mathbf{p} &\leftarrow \mathbf{p} + P\,\mathbf{e}_{2h} \end{aligned}$$<span class="eq-tag">(11.7)</span></div>
 
-<p>$A_{2h}$ is the same five-point operator on the coarse grid. <dfn data-term="restriction">Restriction</dfn> $R$ carries a fine-grid vector down: on cell-centred grids, each coarse cell takes the average of the four fine cells inside it. <dfn data-term="prolongation">Prolongation</dfn> $P$ carries a coarse vector up by bilinear interpolation: each fine cell takes $\tfrac{9}{16}$ of the coarse cell it lies in, $\tfrac{3}{16}$ from each of the two nearest coarse neighbours, and $\tfrac{1}{16}$ from the diagonal one. Interpolation leaves a little rough error of its own, so the correction is followed by a few more sweeps of smoothing.</p>
+<p>Here $A_{2h}$ is the five-point Laplacian discretised on the coarse grid. The <dfn data-term="restriction">restriction</dfn> operator $R$ transfers a fine-grid residual to the coarse grid by setting each coarse cell to the average of the four fine cells it contains, while the <dfn data-term="prolongation">prolongation</dfn> operator $P$ interpolates a coarse correction back to the fine grid—for cell-centred bilinear interpolation, combining $\tfrac{9}{16}$ of the enclosing coarse cell, $\tfrac{3}{16}$ of each of the two adjacent coarse neighbours, and $\tfrac{1}{16}$ of the diagonal neighbour. Because interpolation introduces small high-frequency discrepancies across coarse-cell boundaries, the coarse-grid correction is followed by a few post-smoothing sweeps on the fine grid.</p>
 
-<p>Apply the same idea to the coarse equation, recursively, and you have a <dfn data-term="v-cycle">V-cycle</dfn>: smooth $\nu_1$ times, restrict the residual, cycle on the coarser grid, prolong the correction and add it, smooth $\nu_2$ times. The cycle goes down the levels and back up, like the letter V. In the course's solver, a $32 \times 32$ grid has levels of $32^2$, $16^2$, $8^2$, $4^2$ and $2^2$ cells, and the $2 \times 2$ grid is solved exactly. Each level has a quarter of the cells of the one above, so the coarse levels together cost at most a third of the finest one. A V(2,2) cycle costs 7.65 work units here, counting the residual.</p>
+<p>Solving the coarse residual equation $A_{2h}\mathbf{e}_{2h} = R\mathbf{r}$ recursively by the same two-grid procedure defines a <dfn data-term="v-cycle">V-cycle</dfn>, which performs $\nu_1$ pre-smoothing sweeps, restricts the residual to the next coarser level, recurses down to the coarsest grid and back up, prolongs and adds the correction, and finishes with $\nu_2$ post-smoothing sweeps. On a $32 \times 32$ grid, the hierarchy descends through $32^2$, $16^2$, $8^2$, $4^2$, and $2^2$ cells, solving the $2 \times 2$ system directly. Because each two-dimensional coarsening reduces the cell count by a factor of four, all coarser levels combined add at most $\tfrac{1}{4} + \tfrac{1}{16} + \dots = \tfrac{1}{3}$ of the fine-grid work, and a complete V(2,2) cycle—including residual evaluations and grid transfers—costs 7.65 work units.</p>
 
 <figure data-widget="solvers-vcycle" class="wide"><figcaption>V-cycles on a $32 \times 32$ grid, run by the course's multigrid solver and drawn from its trace. The diagram shows where the cycle is. Each small panel copies the cell updates on its level: the correction being built there, which starts from zero on every visit. The big panel is the error of the fine-grid pressure after each complete cycle, rescaled each time to the error that is left (see its legend). The plot is the residual per cycle, with the default V(2,2) cycle as a dashed reference. The start has a noisy first guess, so the error is rough and smooth at once.</figcaption></figure>
 <div class="try"><ol>
 <li>Watch one cycle at the default settings. Pre-smoothing removes the noise on the fine grid; the coarse panels then build a smooth correction; after the cycle the big panel's scale (in its legend) has shrunk. The first cycle cuts the residual about 280-fold, because most of it came from the rough noise; after that each cycle cuts it by a factor of about 13 to 25.</li>
-<li>Set $\nu = 0$: no smoothing. The coarse grids cannot see rough error, and nothing removes it. The factor per cycle is 1.000: no progress at all.</li>
+<li>Set $\nu = 0$ so that no smoothing sweeps are performed. Because the coarse grids cannot represent high-frequency fine-grid error and no smoother damps it, the residual reduction factor per cycle stays at 1.000.</li>
 <li>Choose Jacobi with $\omega = 1$ as the smoother and $\nu = 1$. The cycle crawls, at 0.77 rising to 0.99 per cycle, because plain Jacobi leaves the checkerboard alone.</li>
 <li>Choose "p = 0 on walls", Jacobi with $\omega = 0.8$, $\nu = 1$, then switch the prolongation from bilinear to constant. The factor goes from about 0.35 per cycle to a divergence at about 1.31.</li>
 </ol></div>
 
-<p>The last experiment is a known rule, not an accident. For a second-order equation the orders of the two transfers must add to more than 2: $m_P + m_R > 2$ (Hemker 1990). Averaging is first order, and so is piecewise-constant prolongation, which copies each coarse value into its four children and leaves a step at every coarse-cell edge. One light Jacobi sweep cannot smooth those steps away. Bilinear prolongation is second order and passes the test. With heavier smoothing the problem is hidden: two red–black sweeps each way repair the constant version.</p>
+<p>The breakdown in that last experiment follows from a theorem of Hemker (1990): for a second-order equation, the prolongation and restriction orders must satisfy $m_P + m_R > 2$. Averaging is first order, as is piecewise-constant prolongation, which copies each coarse value into its four fine cells and leaves a step at every coarse-cell edge that a single light Jacobi sweep cannot smooth away. Two red–black smoothing sweeps per level are enough to compensate for piecewise-constant prolongation, though bilinear prolongation (second order) avoids the issue outright.</p>
 
-<p>Now the result that makes multigrid special. On the closed box, the residual factor per V(2,2) cycle is 0.058 at $16^2$, 0.070 at $32^2$, and 0.081 at both $64^2$ and $128^2$. It does not grow with the grid. Cutting the residual by $10^6$ takes 4 or 5 cycles at every size, so the total work is proportional to the number of unknowns. No method can do better than that, since every unknown must at least be written once. Around a solid disc the coarse grids only approximate the cut cells and the factor is worse, 0.10 to 0.17, but still independent of $n$. Full multigrid goes one step further: it starts on the coarsest grid and interpolates each answer up as the first guess on the next finer grid, which in Brandt's analysis solves the problem to the accuracy of the discretisation in $O(N)$ operations.</p>
+<p>On the closed box with bilinear transfers, a V(2,2) cycle reduces the residual by a factor of 0.058 at $16^2$, 0.070 at $32^2$, and 0.081 at both $64^2$ and $128^2$—a rate that stays bounded as the grid is refined. Cutting the residual by $10^6$ takes 4 or 5 cycles at every size, so the total work is proportional to the number of unknowns $N$—optimal scaling, since every unknown must be updated at least once. Around a solid disc the coarse grids staircase the obstacle boundary, raising the per-cycle factor to between 0.10 and 0.17 while keeping it independent of $n$. Full multigrid (FMG) precedes the V-cycles on each level by solving on the coarsest grid and interpolating each converged solution up as the starting guess for the next finer grid, reaching discretisation-level accuracy in $O(N)$ operations (Brandt, 1977).</p>
 
 <div data-quiz="q4"></div>
 
-<aside class="history" data-era="1961">Fedorenko described the method in 1961, in Russian, while trying to speed up the Poisson solves that ate most of the machine time of a weather-forecasting code; the English translation is dated 1962. In 1964 he proved that its convergence rate does not degrade as the mesh is refined, and Bakhvalov extended the analysis in 1966. The work was little known in the West until Brandt presented his multi-level adaptive technique at a Paris conference in July 1972 (printed 1973), followed by a long paper in Mathematics of Computation in 1977, whose abstract promises to solve "the possibly nonlinear system of n discrete equations in O(n) operations (40n additions and shifts for Poisson problems)". Hackbusch developed the method independently in Germany in 1976–78; his 1977 report already has "multi-grid" in its title. Who coined the name is not known.</aside>
+<aside class="history" data-era="1961">Fedorenko described the two-grid relaxation method in Russian in 1961 (English translation 1962) to accelerate the elliptic solves that dominated the runtime of numerical weather-prediction models. In 1964 he proved that a multigrid cycle converges at a mesh-independent rate on a rectangle, and Bakhvalov generalised the analysis in 1966. In Western numerical analysis the approach gained prominence when Brandt presented his multi-level adaptive technique (MLAT) at a Paris conference in July 1972 (published 1973) and in a comprehensive 1977 Mathematics of Computation paper, whose abstract notes that it solves "the possibly nonlinear system of n discrete equations in O(n) operations (40n additions and shifts for Poisson problems)". Hackbusch developed the method independently in Germany between 1976 and 1978, using the term "multi-grid" in the title of his 1977 Cologne report.</aside>
 
 <aside class="who" data-person="radii-fedorenko">Invented the multigrid idea in 1961 and in 1964 proved, for the Poisson problem on a rectangle, that its convergence rate does not depend on the mesh size.</aside>
 
@@ -182,15 +182,15 @@ export const chapter = {
 
 <h2 id="krylov">Conjugate gradients: the bottom of a bowl</h2>
 
-<p>There is a second way to see the pressure equation. Because $A$ is symmetric and positive definite, solving $A\mathbf{p} = \mathbf{b}$ is the same as finding the lowest point of the quadratic bowl</p>
+<p>Because $A$ is symmetric and positive definite, solving $A\mathbf{p} = \mathbf{b}$ is equivalent to minimising the quadratic energy functional</p>
 
 <div class="eq" id="eq-energy">$$\begin{aligned} f(\mathbf{p}) &= \tfrac{1}{2}\,\mathbf{p}^{\mathrm{T}}A\,\mathbf{p} - \mathbf{b}^{\mathrm{T}}\mathbf{p}, \\ \nabla f &= A\mathbf{p} - \mathbf{b} = -\mathbf{r} \end{aligned}$$<span class="eq-tag">(11.8)</span></div>
 
-<p>since the gradient vanishes exactly at the solution. For the projection this has a physical meaning. The corrected velocity $\mathbf{u}^* - \Delta t\,\nabla p$ is the divergence-free field closest to $\mathbf{u}^*$ in kinetic energy, the <a href="#/pressure/hodge">orthogonal split</a> of the last chapter, and the pressure equation is the condition for that minimum. So solving for pressure is a descent to the bottom of a bowl in $N$ dimensions, and the residual is the downhill direction.</p>
+<p>since $\nabla f(\mathbf{p})$ vanishes precisely when $A\mathbf{p} = \mathbf{b}$. In a pressure projection this minimum has a direct physical interpretation, since the projected velocity $\mathbf{u}^* - \Delta t\,\nabla p$ is the divergence-free field closest to $\mathbf{u}^*$ in kinetic energy—the <a href="#/pressure/hodge">orthogonal decomposition</a> of the previous chapter—and (11.8) is the dual functional for that constrained minimisation. Geometrically, solving for the pressure amounts to descending to the bottom of an $N$-dimensional paraboloid whose steepest downhill direction at any point is the residual $\mathbf{r}$.</p>
 
-<p>The obvious descent is steepest descent: walk along $\mathbf{r}$ to the lowest point on that line, then turn to the new downhill direction. In a round bowl that reaches the bottom in one step. In a long, narrow valley it zigzags from wall to wall. The bowl's shape is set by the eigenvalues of $A$: its walls are $\kappa$ times steeper in one direction than in another. In the worst case steepest descent cuts the error by a factor of $(\kappa - 1)/(\kappa + 1)$ per step, in the energy norm $\|\mathbf{e}\|_A = \sqrt{\mathbf{e}^{\mathrm{T}}A\,\mathbf{e}}$. With $\kappa$ of order $n^2$, that is as slow as Jacobi.</p>
+<p>The simplest descent strategy is steepest descent, which steps along the current residual direction $\mathbf{r}$ to the minimum of $f$ along that line and then recomputes the gradient. When the level sets of $f$ are spherical ($\kappa = 1$), a single line search reaches the minimum, whereas in an elongated valley with condition number $\kappa = \lambda_{\max}/\lambda_{\min}$, consecutive steps are forced to be orthogonal in Euclidean space and zigzag from wall to wall. In the worst case, each steepest-descent step reduces the error in the energy norm $\|\mathbf{e}\|_A = \sqrt{\mathbf{e}^{\mathrm{T}}A\,\mathbf{e}}$ by $(\kappa - 1)/(\kappa + 1)$, which for $\kappa = O(n^2)$ requires $O(n^2)$ iterations—the same asymptotic scaling as Jacobi.</p>
 
-<p>The <dfn data-term="conjugate-gradient">conjugate gradient method</dfn> fixes the zigzag. Its first step is steepest descent. Every later direction is chosen to be conjugate to all the earlier ones, $\mathbf{d}_i^{\mathrm{T}}A\,\mathbf{d}_j = 0$: perpendicular in the bowl's own geometry. A step along a conjugate direction never spoils the minimisation already done along the others, so nothing is ever undone. After $k$ steps the iterate is the best possible, in the energy norm, among all guesses of the form $\mathbf{p}_0$ plus a combination of $\mathbf{r}_0, A\mathbf{r}_0, \dots, A^{k-1}\mathbf{r}_0$. That space is a Krylov subspace, and every method built on it is a <dfn data-term="krylov-method">Krylov method</dfn>. Remarkably, the conjugate direction comes from a two-term recurrence, so each iteration needs one product with $A$ (one work unit) and a few dot products:</p>
+<p>The <dfn data-term="conjugate-gradient">conjugate gradient method</dfn> eliminates that zigzagging. Its first step is along the steepest-descent direction $\mathbf{r}_0$, and every subsequent search direction $\mathbf{d}_k$ is constructed to be $A$-conjugate to all previous directions, $\mathbf{d}_i^{\mathrm{T}}A\,\mathbf{d}_j = 0$ for $i \neq j$—perpendicular in the inner product induced by $A$. Because a line search along $\mathbf{d}_k$ preserves the optimality already achieved along all earlier conjugate directions, the $k$-th iterate $\mathbf{p}_k$ minimises $\|\mathbf{e}_k\|_A$ over the entire affine subspace $\mathbf{p}_0 + \operatorname{span}\{\mathbf{r}_0, A\mathbf{r}_0, \dots, A^{k-1}\mathbf{r}_0\}$. That span is a Krylov subspace, and algorithms that search it are called <dfn data-term="krylov-method">Krylov methods</dfn>. Because $A$ is symmetric, the new $A$-conjugate direction can be updated from a short two-term recurrence, requiring only one matrix–vector product $A\mathbf{d}_k$ (one work unit) and two inner products per iteration:</p>
 
 <div class="eq" id="eq-cg">$$\begin{aligned} \mathbf{r}_0 &= \mathbf{b} - A\mathbf{p}_0, \quad \mathbf{d}_0 = \mathbf{r}_0, \\ \alpha_k &= \frac{\mathbf{r}_k^{\mathrm{T}}\mathbf{r}_k}{\mathbf{d}_k^{\mathrm{T}}A\,\mathbf{d}_k}, \\ \mathbf{p}_{k+1} &= \mathbf{p}_k + \alpha_k\mathbf{d}_k, \\ \mathbf{r}_{k+1} &= \mathbf{r}_k - \alpha_k A\,\mathbf{d}_k, \\ \beta_k &= \frac{\mathbf{r}_{k+1}^{\mathrm{T}}\mathbf{r}_{k+1}}{\mathbf{r}_k^{\mathrm{T}}\mathbf{r}_k}, \\ \mathbf{d}_{k+1} &= \mathbf{r}_{k+1} + \beta_k\mathbf{d}_k \end{aligned}$$<span class="eq-tag">(11.9)</span></div>
 
@@ -198,23 +198,23 @@ export const chapter = {
 <div class="try"><ol>
 <li>At $\kappa = 10$ from the worst start, steepest descent needs 69 steps to cut the residual by $10^6$, each cutting the energy error by exactly $9/11 = 0.818$. Conjugate gradients needs 2.</li>
 <li>Raise $\kappa$ to 100: 691 steps for steepest descent, still 2 for conjugate gradients.</li>
-<li>Drag the start onto an axis of the ellipse. Steepest descent now goes straight to the centre: the zigzag depends on where you start, the worst case does not.</li>
-<li>Turn on the Jacobi preconditioner with the tilt at 0°: the bowl becomes round and both methods take one step. At 45° it changes nothing.</li>
+<li>Drag the starting point onto a principal axis of the ellipse, where steepest descent steps straight to the minimum in a single iteration because the initial gradient already points at the centre.</li>
+<li>Turn on the Jacobi preconditioner with the tilt at 0°, which rescales the axes into a circle so that both methods converge in one step; at 45° the diagonal entries of $A$ are equal, so diagonal scaling leaves the contours unchanged.</li>
 </ol></div>
 
-<p>In exact arithmetic conjugate gradients reaches the exact answer in at most $N$ steps, two in the figure. On the pressure problem $N$ is huge and that guarantee is useless. What matters is the classical bound</p>
+<p>In exact arithmetic conjugate gradients reaches the exact solution in at most $N$ steps (two in the two-variable figure). On a fine grid $N = n^2$ is far too large for $N$-step termination to be useful; what governs practical convergence is the Chebyshev polynomial bound</p>
 
 <div class="eq" id="eq-cg-bound">$$\|\mathbf{e}_k\|_A \le 2\left(\frac{\sqrt{\kappa} - 1}{\sqrt{\kappa} + 1}\right)^{k}\|\mathbf{e}_0\|_A$$<span class="eq-tag">(11.10)</span></div>
 
-<p>with $\sqrt{\kappa}$ where steepest descent has $\kappa$. Since $\kappa$ grows like $n^2$, the iteration count grows like $n$: on the closed box, 56, 113, 225 and 424 iterations from $16^2$ to $128^2$. That is the same growth as SOR at its best $\omega$, with no parameter to tune.</p>
+<p>which replaces the $\kappa$ of steepest descent with $\sqrt{\kappa}$. Because $\kappa(A) = O(n^2)$, the iteration count scales as $O(\sqrt{\kappa}) = O(n)$—requiring 56, 113, 225, and 424 iterations on the closed box at $16^2$, $32^2$, $64^2$, and $128^2$—matching the asymptotic scaling of optimal SOR without requiring a relaxation parameter.</p>
 
-<p>To do better, change the bowl. A <dfn data-term="preconditioner">preconditioner</dfn> is an approximation $M \approx A$ that is cheap to invert; conjugate gradients then works with $M^{-1}A$ (in a form that keeps the symmetry), whose condition number can be far smaller. The cheapest choice, Jacobi preconditioning with $M$ the diagonal of $A$, does nothing here, because the diagonal is $4/h^2$ in nearly every cell: 222 iterations instead of 225 on a $64^2$ box. That is the 45° bowl in the figure. Incomplete Cholesky, IC(0), runs Cholesky factorisation but throws away every fill entry, keeping $L$ as sparse as $A$ (Meijerink and van der Vorst, 1977). It costs two work units per iteration and needs 21, 39, 67 and 129 iterations from $16^2$ to $128^2$. Modified incomplete Cholesky, MIC(0) (Gustafsson, 1978), adds the dropped fill back onto the diagonal so that $M$ matches $A$ on smooth vectors. That brings $\kappa(M^{-1}A)$ down to order $n$, and the iteration count to order $\sqrt{n}$ on a plain box. With the slightly cautious weighting used in graphics codes (Bridson's book puts back 97% of the fill), the counts are 17, 24, 38 and 70. Best of all is to use one multigrid V-cycle as the preconditioner (McAdams and colleagues, 2010): 5 iterations at every size, and robust around obstacles, where the conjugate-gradient wrapper absorbs the coarse grids' mistakes.</p>
+<p>Faster convergence comes from reshaping the quadratic form with a <dfn data-term="preconditioner">preconditioner</dfn>, an easily inverted matrix $M \approx A$ that transforms the system so conjugate gradients acts on $M^{-1}A$ (in a symmetrically preconditioned form) with a much smaller condition number $\kappa(M^{-1}A)$. Diagonal (Jacobi) preconditioning, $M = \operatorname{diag}(A)$, leaves the uniform-grid Poisson matrix nearly unchanged because almost every interior row has the same diagonal entry $4/h^2$, taking 222 iterations instead of 225 on a $64^2$ closed box (corresponding to the 45°-tilted ellipse in the figure). Incomplete Cholesky, IC(0), performs Cholesky factorisation while discarding all fill-in outside the sparsity pattern of $A$ (Meijerink and van der Vorst, 1977); each preconditioned step costs two work units and converges in 21, 39, 67, and 129 iterations across $16^2$ to $128^2$. Modified incomplete Cholesky, MIC(0) (Gustafsson, 1978), adds the discarded fill entries back onto the diagonal so that $M$ agrees with $A$ on slowly varying vectors, reducing $\kappa(M^{-1}A)$ to $O(n)$ and the iteration count to $O(n^{1/2})$—17, 24, 38, and 70 iterations when using the 0.97 modification factor standard in graphics codes (Bridson, 2015). Using a single multigrid V-cycle as $M^{-1}$ (McAdams et al., 2010) combines the strengths of both approaches, converging in 5 iterations at every grid size while the outer Krylov projection compensates for the modes perturbed near cut cells or irregular obstacles.</p>
 
-<p>Conjugate gradients needs a symmetric positive definite matrix. The pressure matrix is one, but many matrices in fluid dynamics are not: implicit advection, or velocity and pressure solved together. For those, the standard Krylov methods are GMRES (Saad and Schultz, 1986), which picks the iterate with the smallest residual in the Krylov space but must store every direction, so it is restarted every $m$ steps; and Bi-CGSTAB (van der Vorst, 1992), which uses short recurrences like conjugate gradients at the price of less regular convergence. Both are usually run with a preconditioner.</p>
+<p>While conjugate gradients requires a symmetric positive definite matrix—as the discrete pressure Laplacian provides—other linear systems in fluid dynamics, such as implicit advection–diffusion or coupled velocity–pressure systems, are non-symmetric. Standard Krylov solvers for non-symmetric matrices include GMRES (Saad and Schultz, 1986), which minimises the Euclidean residual norm over the Krylov subspace by storing an orthonormal basis of search directions (typically restarted every $m$ steps to bound memory), and Bi-CGSTAB (van der Vorst, 1992), which maintains short recurrences with fixed storage per step though with less regular residual reduction. In practice both are paired with a preconditioner.</p>
 
 <div data-quiz="q5"></div>
 
-<aside class="history" data-era="1952">Hestenes and Stiefel published the method in December 1952, after finding it independently, Hestenes at the Institute for Numerical Analysis in Los Angeles and Stiefel in Zürich. They saw it as a rival to elimination: "In our opinion, the conjugate gradient method is superior to the elimination method as a machine method." They also called it "an iterative method which terminates in at most n steps if no rounding-off errors are encountered." Round-off destroys the exact termination, and judged as a direct method it disappointed. Saad and van der Vorst write that "it took about 25 years for the conjugate gradient method to become the method of choice for symmetric positive definite matrices". Its wide use came once it was treated as an iterative method and paired with preconditioners such as incomplete Cholesky (1977). The name "Krylov subspace" honours a 1931 paper by A. N. Krylov on computing characteristic polynomials; he did not study linear solvers, and who attached his name is not known.</aside>
+<aside class="history" data-era="1952">Hestenes and Stiefel published the conjugate gradient method in December 1952 after developing it independently—Hestenes with his group at the Institute for Numerical Analysis in Los Angeles and Stiefel in Zürich. Presenting it alongside Gaussian elimination, they wrote, "In our opinion, the conjugate gradient method is superior to the elimination method as a machine method," and described it as "an iterative method which terminates in at most n steps if no rounding-off errors are encountered." Because floating-point rounding causes loss of conjugacy over $N$ steps, the algorithm saw limited use as a direct solver; as Saad and van der Vorst (2000) note, "it took about 25 years for the conjugate gradient method to become the method of choice for symmetric positive definite matrices", following Reid's 1971 analysis of CG as an iterative method and the introduction of incomplete Cholesky preconditioning in 1977. The term "Krylov subspace" refers to the power sequence $\mathbf{v}, A\mathbf{v}, A^2\mathbf{v}, \dots$ used by A. N. Krylov in a 1931 paper on computing the characteristic polynomial of a matrix.</aside>
 
 <aside class="who" data-person="magnus-hestenes">Developed conjugate gradients at the Institute for Numerical Analysis, with Rosser, Forsythe and Paige, and published it with Stiefel in December 1952.</aside>
 
@@ -242,32 +242,32 @@ export const chapter = {
 </tbody>
 </table>
 
-<p>At $128^2$ the gap is enormous: about 29,000 work units for Gauss–Seidel, 450 for SOR or conjugate gradients, 140 for MIC(0) and under 40 for multigrid. And it widens with every refinement, because the exponents differ. Run the race yourself.</p>
+<p>At $128^2$, Gauss–Seidel requires about 29,000 work units, optimal SOR and plain conjugate gradients about 420–450, MIC(0)-preconditioned CG 140, and multigrid under 40—a gap that widens on finer grids because of their different scaling exponents $p$.</p>
 
 <figure data-widget="solvers-race" class="wide"><figcaption>Five solvers on the same pressure problem. Left: relative residual against work, the solvers advanced together so that none gets ahead. Right: iterations to cut the residual by $10^6$ on grids from $16^2$ to $128^2$, on log scales, with reference slopes. Every point is a full solve by the course's solvers, computed in the background; the readouts give the work to reach $10^{-8}$, the iterations and time on this device at the race's grid size, and the fitted growth.</figcaption></figure>
 <div class="try"><ol>
 <li>Watch the race on the closed box. Multigrid reaches $10^{-8}$ in 46 work units; Gauss–Seidel has barely started.</li>
 <li>On the right plot, compare the slopes with the reference lines: about 2 for relaxation, about 1 for SOR and conjugate gradients, flat for multigrid.</li>
 <li>Switch to the box with a disc and compare the two multilevel methods. Multigrid alone needs 7 cycles to cut the residual by $10^6$ where it needed 5, CG with multigrid 6, and neither count grows with the grid.</li>
-<li>Switch the preconditioned method to CG + Jacobi: its curve sits on top of plain CG.</li>
+<li>Switch the preconditioned method to CG + Jacobi, whose curve sits almost on top of plain CG.</li>
 </ol></div>
 
-<p>Work units are not seconds. Measured in node on a desktop machine at $128^2$ to a tolerance of $10^{-4}$, multigrid takes about 2 milliseconds, CG with multigrid about 4, MIC(0) about 19, SOR and plain conjugate gradients 55 to 90, and Gauss–Seidel about two seconds. A phone is several times slower. Real hardware adds two further concerns. Memory traffic often costs more than arithmetic, so methods that touch each value once per sweep do well. And parallelism matters: Jacobi and red–black sweeps parallelise perfectly, while lexicographic Gauss–Seidel and the triangular solves of IC(0) and MIC(0) are sequential by nature, and the coarsest multigrid levels leave most of a GPU idle. That is why graphics codes on GPUs still often run Jacobi or red–black sweeps, accepting the stall.</p>
+<p>Wall-clock time depends on hardware as well as work units. Benchmarked in Node on a desktop CPU at $128^2$ to a relative tolerance of $10^{-4}$, multigrid takes about 2 milliseconds, multigrid-preconditioned CG about 4 ms, MIC(0)-preconditioned CG about 19 ms, optimal SOR and plain CG 55 to 90 ms, and Gauss–Seidel about 2 seconds (with a typical phone running several times slower). On modern processors, memory bandwidth and parallelism often matter as much as operation counts; Jacobi and red–black Gauss–Seidel sweeps stream regularly through memory and parallelise across every cell at once, whereas lexicographic Gauss–Seidel and the forward/backward triangular solves of IC(0) and MIC(0) have sequential data dependencies, and the coarsest levels of a multigrid hierarchy have too few cells to saturate a GPU. Consequently, real-time GPU solvers sometimes still use red–black or damped Jacobi sweeps, either alone on small grids or as the smoother inside a multigrid cycle.</p>
 
-<p>The last decision is when to stop. The residual of the pressure solve is exactly the divergence the projection leaves behind, so the tolerance is the leak you accept. A projected velocity with divergence $\nabla\cdot\mathbf{u}$ creates fluid in some cells and destroys it in others; in a closed box the two balance, and the volume created per step is $\Delta t\,\tfrac{1}{2}\sum_c |(\nabla_h\cdot\mathbf{u})_c|\,h^2$. It looks small, but it happens every step, and it accumulates. The solve is warm-started from the previous pressure, which is why multigrid needs only about 1.6 cycles per step at $10^{-4}$ in the stirred box below.</p>
+<p>The final solver parameter is the stopping tolerance. Because the residual of the pressure Poisson equation is proportional to the velocity divergence remaining after projection, the solver tolerance directly sets the local volume error per step. A projected velocity with nonzero divergence $\nabla\cdot\mathbf{u}$ creates fluid volume in some cells and destroys it in others; in a closed box the signed sum vanishes, and the gross volume created and destroyed per step is $\Delta t\,\tfrac{1}{2}\sum_c |(\nabla_h\cdot\mathbf{u})_c|\,h^2$. Although small on a single step, this discrepancy accumulates over thousands of steps. Warm-starting each solve from the previous time step's pressure keeps tight tolerances inexpensive—in the stirred box below, multigrid averages 1.6 V-cycles per step at a relative tolerance of $10^{-4}$.</p>
 
 <div data-quiz="q6"></div>
 
 <figure data-widget="solvers-tolerance" class="wide"><figcaption>A Stable Fluids simulation of a closed $48 \times 48$ box, one step per frame, its pressure solved by multigrid to a tolerance or by a fixed number of Jacobi sweeps. The plot adds up the volume of fluid created (and destroyed) by the divergence each projection leaves behind; earlier runs stay on the plot for comparison. In the layered scene the fluid should stay at rest; the picture shows its speed.</figcaption></figure>
 <div class="try"><ol>
-<li>Run the swirl at $10^{-4}$, then at $10^{-2}$, then at $10^{-1}$. Over 10 seconds the leak is about $1.8 \times 10^{-3}$, 0.20 and 2.2 box volumes: it scales with the tolerance.</li>
-<li>Switch to 30 fixed Jacobi sweeps per step: a leak of 0.064, for more than twice the work of multigrid at $10^{-4}$ (about 12 work units a step). Even 200 sweeps leak 0.005.</li>
-<li>Choose the layered fluid at rest with a tolerance of $10^{-1}$: currents of up to about 0.5 appear from nothing, because the unconverged pressure cannot hold the layers up. At $10^{-6}$ the fluid stays still to about $2 \times 10^{-6}$.</li>
+<li>Run the swirl at $10^{-4}$, then at $10^{-2}$, then at $10^{-1}$. Over 10 seconds the cumulative volume error is about $1.8 \times 10^{-3}$, 0.20, and 2.2 box volumes, scaling linearly with the solver tolerance.</li>
+<li>Switch to 30 fixed Jacobi sweeps per step, which produces a volume error of 0.064 while doing more than twice the work of multigrid at $10^{-4}$ (about 12 work units per step); even 200 Jacobi sweeps leave an error of 0.005.</li>
+<li>Choose the layered fluid at rest with a tolerance of $10^{-1}$, where spurious currents of speed up to about 0.5 develop because the unconverged pressure fails to balance the hydrostatic buoyancy gradient. At $10^{-6}$ the fluid remains still to within $2 \times 10^{-6}$.</li>
 </ol></div>
 
-<p>So pick the tolerance for what you need, and check it. A relative tolerance of $10^{-4}$ to $10^{-6}$ is common for visual work; quantitative work goes tighter. Monitor the divergence after the projection, and the total volume, not just the iteration count. A fixed iteration budget, as in many real-time codes, is a tolerance in disguise, and a worse one on a finer grid. The symptom of getting this wrong is <a href="#/pressure/projection">the incomplete projection</a> of the last chapter: tracers that bunch up, smoke that gains or loses volume, liquid that slowly disappears.</p>
+<p>Visual simulations typically converge the pressure residual to a relative tolerance of $10^{-4}$ to $10^{-6}$, while quantitative studies use tighter thresholds and monitor both the post-projection divergence and total volume directly. Fixing the number of relaxation sweeps instead of solving to a residual tolerance corresponds to an effective tolerance that degrades as $O(n^2)$ when the grid is refined, producing <a href="#/pressure/projection">the incomplete projection</a> artifacts seen in the previous chapter—tracers that bunch together, smoke plumes that gain or lose volume, and free-surface liquids whose volume drifts over time.</p>
 
-<aside class="pitfall">Stopping early leaves divergence in every step, and the leak adds up: volume drifts, a fluid at rest starts to move, and the error grows with the grid at a fixed iteration count. See <a href="#/pathologies">the rogues' gallery</a> entry on a loose tolerance.</aside>
+<aside class="pitfall">Stopping the pressure solve early leaves residual divergence at every time step whose volume error accumulates over the run, causing volume drift and spurious currents in a stratified fluid at rest, and worsening under grid refinement when the iteration count is fixed. See <a href="#/pathologies">the rogues' gallery</a> entry on a loose tolerance.</aside>
 
 <aside class="note" data-label="Where to go next">The <a data-aid="pressure-solver">pressure-solver aid</a> animates these solvers step by step on a pressure problem of its own. The next chapter, <a href="#/stable-fluids">A fluid you can stir</a>, puts the multigrid solve inside a fluid you can stir.</aside>
 
@@ -318,37 +318,37 @@ export const chapter = {
       type: 'mcq',
       q: 'A $1000 \\times 1000$ pressure grid is numbered row by row and factorised by banded Cholesky, $A = LL^{\\mathrm{T}}$. Roughly how many nonzero numbers does $L$ hold?',
       choices: [
-        'About $3 \\times 10^6$, the same as the lower half of $A$: the factor of a sparse matrix is sparse.',
-        'About $10^9$: elimination fills the band of half-width $n = 1000$ in all $10^6$ rows.',
-        'About $5 \\times 10^{11}$: one for every multiply–add.',
+        'About $3 \\times 10^6$, the same as the lower half of $A$, because the Cholesky factor of a sparse matrix preserves its sparsity.',
+        'About $10^9$, because elimination fills the band of half-width $n = 1000$ across all $10^6$ rows.',
+        'About $5 \\times 10^{11}$, one entry for every multiply–add.',
         'About $10^{12}$, the full dense matrix.',
       ],
       answer: 1,
-      explain: 'Row by row, every nonzero of $A$ lies within $n$ places of the diagonal, and elimination fills that band: $N \\times n = 10^6 \\times 10^3 = 10^9$ numbers, 8 gigabytes. The figure measures it: at $n = 24$, 13,847 nonzeros against $Nn = 13{,}824$. It never fills outside the band, so it is not dense, and $5 \\times 10^{11}$ is the count of operations ($n^4/2$), not of stored numbers.',
+      explain: 'Under row-by-row numbering, every nonzero of $A$ lies within $n$ columns of the diagonal, and Cholesky elimination fills that band completely, producing about $N \\times n = 10^6 \\times 10^3 = 10^9$ nonzeros (8 gigabytes in double precision). At $n = 24$ the figure measures 13,847 nonzeros in $L$, compared with 1,680 in the lower half of $A$ and $Nn = 13{,}824$. Elimination never creates fill outside the band, while $5 \\times 10^{11}$ is the operation count $n^4/2$ rather than the number of stored entries.',
     },
     q2: {
       type: 'predict',
       q: 'In the next figure, after 10 Gauss–Seidel sweeps on the $16 \\times 16$ closed box, the residual has fallen to 0.13 of its starting size. How big is the error, relative to the size of the exact answer?',
       choices: [
-        'About 0.13 as well: residual and error shrink together.',
-        'About 0.8: most of the error is still there.',
+        'About 0.13 as well, because residual and error shrink together.',
+        'About 0.8, because most of the smooth error remains.',
         'About 0.02, the square of the residual ratio.',
-        'Larger than at the start: Gauss–Seidel first makes the error worse.',
+        'Larger than at the start, because Gauss–Seidel first amplifies the error.',
       ],
       answer: 1,
-      explain: 'The figure measures 0.79. By (11.4), $A\\mathbf{e} = \\mathbf{r}$, and $A$ is a second difference: for a smooth error it is small, so a large smooth error hides behind a small residual. Relaxation removes the rough part of the error, which carries most of the residual, and leaves the smooth part. The error does fall, slowly, so it is not made worse.',
+      explain: 'The figure measures a relative error of 0.79. Because $A\\mathbf{e} = \\mathbf{r}$ by (11.4) and $A$ is a second-difference operator, a smooth, long-wavelength error $\\mathbf{e}$ has small curvature and produces a much smaller residual $\\mathbf{r}$. Ten Gauss–Seidel sweeps damp the oscillatory error components that dominated the initial residual while leaving the smooth error mode nearly intact.',
     },
     q3: {
       type: 'predict',
       q: 'The next figure starts from a pure sawtooth, mode $k = n$ with $n = 31$, and applies plain Jacobi ($\\omega = 1$). What is left after 10 sweeps?',
       choices: [
-        'Nothing: Jacobi kills the roughest modes first.',
-        'About 95% of the sawtooth, its sign flipping every sweep.',
-        'A smooth hump: the sawtooth turns into mode 1.',
-        'A sawtooth about 10 times larger: Jacobi is unstable on it.',
+        'Nothing, because Jacobi damps the roughest modes first.',
+        'About 95% of the sawtooth, with its sign flipping on every sweep.',
+        'A smooth hump, because the sawtooth aliases into mode 1.',
+        'A sawtooth about 10 times larger, because Jacobi is unstable on that mode.',
       ],
       answer: 1,
-      explain: 'By (11.6) the factor is $1 - 2\\sin^2(31\\pi/64) = -0.9952$, so 10 sweeps leave $0.9952^{10} \\approx 0.95$. The modes are eigenvectors of Jacobi, so nothing turns into another mode. With $\\omega = 2/3$ the factor is about $-1/3$ and the sawtooth is gone in a few sweeps. Instability needs $|\\lambda| > 1$, which takes $\\omega > 1$.',
+      explain: 'By (11.6) the amplification factor for mode $k = n = 31$ at $\\omega = 1$ is $1 - 2\\sin^2(31\\pi/64) = -0.9952$, so 10 sweeps leave $0.9952^{10} \\approx 0.95$ of the initial amplitude while alternating its sign. Because the discrete sine modes are eigenvectors of Jacobi, no energy transfers into mode 1. Setting $\\omega = 2/3$ changes the factor to about $-1/3$ so the sawtooth decays within a few sweeps, whereas instability ($|\\lambda_k| > 1$) occurs only for $\\omega > 1$.',
     },
     q4: {
       type: 'mcq',
@@ -356,106 +356,106 @@ export const chapter = {
       choices: [
         'About 80, since iterations grow like $n^2$.',
         'About 20, since iterations grow like $n$.',
-        'About 5: the factor per cycle does not depend on the grid.',
-        'About 2: finer grids are smoother, so multigrid gets faster.',
+        'About 5, because the reduction factor per cycle stays independent of the grid size.',
+        'About 2, because finer grids are smoother and need fewer cycles.',
       ],
       answer: 2,
-      explain: 'Measured: 5 cycles at $32^2$, $64^2$ and $128^2$, with a factor of 0.07 to 0.08 per cycle. Smoothing removes rough error at a rate independent of $h$, and every smooth component is rough on some coarser grid. The work per cycle grows with the number of cells, so total work is proportional to $N$; the cycle count does not shrink, because the problem does not get easier.',
+      explain: 'Measured on the closed box, V(2,2) takes 5 cycles at $32^2$, $64^2$, and $128^2$, reducing the residual by a factor of 0.07 to 0.08 per cycle. Because relaxation damps oscillatory modes at a rate independent of $h$ and the coarser levels damp the smoother modes at the same rate on their own scales, the number of cycles stays constant and the total work scales linearly with the number of cells $N$.',
     },
     q5: {
       type: 'mcq',
       q: 'You add a Jacobi preconditioner ($M$ = the diagonal of $A$) to conjugate gradients for the pressure on a $64 \\times 64$ closed box. Plain CG takes 225 iterations. What happens?',
       choices: [
-        'About 15 iterations: the square root of 225.',
-        'About 112: Jacobi halves the iteration count.',
-        'About the same, 222: the diagonal is $4/h^2$ almost everywhere, so dividing by it only rescales.',
-        'It diverges: preconditioned CG needs an exact inverse.',
+        'About 15 iterations, roughly the square root of 225.',
+        'About 112 iterations, halving the iteration count.',
+        'About the same (222), because the diagonal is $4/h^2$ on every interior cell so dividing by it merely rescales $A$.',
+        'It diverges, because preconditioned CG requires an exact inverse.',
       ],
       answer: 2,
-      explain: 'Measured: 222 against 225. A constant diagonal scales $A$ without changing its shape, like the 45° bowl in the figure. Diagonal scaling helps when the diagonal varies a lot, for example with large jumps in density. To change the iteration count you need an $M$ that captures the coupling between cells: incomplete Cholesky (67 iterations here), MIC(0) (38) or a multigrid cycle (5).',
+      explain: 'On the $64 \\times 64$ closed box, diagonally preconditioned CG takes 222 iterations compared with 225 for unpreconditioned CG. Because the diagonal of $A$ equals $4/h^2$ on every interior cell, dividing by it merely rescales the matrix without reducing its condition number (like the 45°-tilted bowl in the figure). Diagonal preconditioning helps when the diagonal varies strongly across the grid, such as in variable-density flows, whereas reducing the iteration count on a uniform grid requires a preconditioner that approximates the off-diagonal coupling—such as IC(0) (67 iterations), MIC(0) (38), or a multigrid V-cycle (5).',
     },
     q6: {
       type: 'predict',
       q: 'In the next figure, multigrid at a relative tolerance of $10^{-4}$ leaks $1.8 \\times 10^{-3}$ of the box volume over 10 seconds of a stirred simulation. You loosen the tolerance to $10^{-2}$. What happens to the leak?',
       choices: [
-        'Nothing much: multigrid is so efficient that it overshoots the tolerance anyway.',
+        'Very little, because multigrid overshoots the tolerance within each cycle.',
         'It roughly doubles.',
         'It grows about a hundredfold, to about 0.2 of the box.',
-        'It grows ten-thousandfold: errors square from step to step.',
+        'It grows ten-thousandfold, because errors square from step to step.',
       ],
       answer: 2,
-      explain: 'Measured: 0.196 against $1.77 \\times 10^{-3}$, a factor of 110. Each projection leaves divergence in proportion to the tolerance, and the leak is the sum over steps, so it scales with the tolerance. Multigrid does overshoot within a cycle, but it stops at the first cycle below the tolerance. Nothing squares: the leftovers add up linearly.',
+      explain: 'The measured cumulative volume error grows from $1.77 \\times 10^{-3}$ at $10^{-4}$ to 0.196 at $10^{-2}$, a factor of 110. Because each projection stops at the first cycle whose residual falls below the tolerance, the leftover divergence per step—and therefore its time integral—scales approximately linearly with the tolerance.',
     },
   },
   glossary: {
     'jacobi-method': {
       term: 'Jacobi method',
-      def: 'An iteration for $A\\mathbf{x} = \\mathbf{b}$ that sets every unknown, all at once, to the value that satisfies its own equation with the old values of the others. Weighted Jacobi moves only a fraction $\\omega$ of the way. Fully parallel, but slow on smooth error. Jacobi, 1845.',
+      def: 'A relaxation scheme for $A\\mathbf{x} = \\mathbf{b}$ that updates every unknown simultaneously to the value satisfying its own row equation using the previous iterate\'s neighbour values; weighted Jacobi applies an under-relaxation factor $\\omega$. Fully parallel, with $O(n^2)$ convergence on the Poisson equation. Jacobi, 1845.',
       section: 'relaxation',
     },
     'gauss-seidel': {
       term: 'Gauss–Seidel',
-      def: 'Relaxation that updates the unknowns one after another and uses each new value at once. Same cost as Jacobi and about twice as fast on the pressure problem, but sequential in its usual row-by-row order. Neither Gauss (1823) nor Seidel (1874) used the fixed cyclic order taught today.',
+      def: 'A relaxation scheme that updates unknowns sequentially in place, using each newly computed value immediately. On the five-point Poisson stencil it requires the same arithmetic per sweep as Jacobi and converges in roughly half as many sweeps. Neither Gauss (1823) nor Seidel (1874) used the fixed cyclic ordering standard on computers.',
       section: 'relaxation',
     },
     sor: {
       term: 'successive over-relaxation (SOR)',
-      def: 'Gauss–Seidel with each update multiplied by a factor $1 < \\omega < 2$. With the optimal $\\omega = 2/(1 + \\sqrt{1 - \\rho_J^2})$ the iteration count grows like $n$ instead of $n^2$; above the optimum it degrades quickly, and above 2 it diverges. Young and Frankel, 1950.',
+      def: 'Gauss–Seidel extrapolated by an over-relaxation factor $1 < \\omega < 2$. With Young\'s optimal parameter $\\omega = 2/(1 + \\sqrt{1 - \\rho_J^2})$, the iteration count on the Poisson equation scales as $O(n)$ rather than $O(n^2)$, while $\\omega \\ge 2$ diverges. Young and Frankel, 1950.',
       section: 'relaxation',
     },
     'red-black-ordering': {
       term: 'red–black ordering',
-      def: 'Colouring grid cells like a chessboard. With a five-point stencil a red cell has only black neighbours, so all red cells can be relaxed in parallel, then all black ones. Same convergence rate as row-by-row Gauss–Seidel.',
+      def: 'A two-colour chessboard partitioning of a structured grid under which every red cell has only black five-point neighbours, allowing all red cells to be relaxed in parallel followed by all black cells at the same convergence rate as lexicographic Gauss–Seidel.',
       section: 'relaxation',
     },
     residual: {
       term: 'residual',
-      def: '$\\mathbf{r} = \\mathbf{b} - A\\mathbf{x}$: how badly a guess fails the equations. It is computable, unlike the error $\\mathbf{e}$, and the two are linked by $A\\mathbf{e} = \\mathbf{r}$, so a small residual can hide a large smooth error. In a projection it is the divergence left behind.',
+      def: 'The vector $\\mathbf{r} = \\mathbf{b} - A\\mathbf{x}$ measuring how far an approximate solution $\\mathbf{x}$ is from satisfying $A\\mathbf{x} = \\mathbf{b}$. Unlike the algebraic error $\\mathbf{e} = \\mathbf{x}^* - \\mathbf{x}$, the residual can be computed directly; because $A\\mathbf{e} = \\mathbf{r}$ and $A$ differentiates twice, a large smooth error can correspond to a small residual. In a pressure projection, $\\mathbf{r}$ is proportional to the divergence remaining in the velocity field.',
       section: 'relaxation',
     },
     smoothing: {
       term: 'smoothing',
-      def: 'What relaxation sweeps really do: damp the rough (high-frequency) part of the error quickly, by a factor independent of the grid, while leaving smooth error almost untouched. A method used this way is called a smoother.',
+      def: 'The rapid, grid-independent damping of high-frequency (oscillatory) error modes by a few sweeps of a local relaxation scheme such as damped Jacobi or Gauss–Seidel, which leaves low-frequency (smooth) error modes nearly unchanged. In multigrid, a relaxation scheme applied for this purpose is called a smoother.',
       section: 'smoothing',
     },
     multigrid: {
       term: 'multigrid',
-      def: 'A solver that combines smoothing on the fine grid with corrections computed on a hierarchy of coarser grids, where smooth error looks rough. For the Poisson equation it converges at a rate independent of the grid, in work proportional to the number of unknowns. Fedorenko, 1961–64; Brandt, 1973–77.',
+      def: 'A hierarchical solver that combines fine-grid smoothing with residual corrections computed on a sequence of coarser grids, where smooth fine-grid errors appear oscillatory. For the Poisson equation it converges in a grid-independent number of cycles with $O(N)$ total work. Fedorenko, 1961–64; Brandt, 1973–77.',
       section: 'multigrid',
     },
     'v-cycle': {
       term: 'V-cycle',
-      def: 'One multigrid iteration: smooth, restrict the residual to the next coarser grid, apply the cycle there recursively (solving exactly on the coarsest grid), prolong the correction back, smooth again. V($\\nu_1$,$\\nu_2$) names the numbers of sweeps before and after.',
+      def: 'A single recursive multigrid pass that applies $\\nu_1$ pre-smoothing sweeps on the fine grid, restricts the residual to the next coarser level, solves the coarse residual equation recursively (with a direct solve on the coarsest level), prolongs and adds the correction, and applies $\\nu_2$ post-smoothing sweeps, denoted V($\\nu_1$,$\\nu_2$).',
       section: 'multigrid',
     },
     restriction: {
       term: 'restriction',
-      def: 'The multigrid operator that carries a fine-grid vector (usually the residual) to the next coarser grid, for example by averaging the four fine cells inside each coarse cell.',
+      def: 'The transfer operator $R$ that maps a fine-grid vector (typically the residual) onto the next coarser grid, such as by averaging the four fine cells inside each coarse cell.',
       section: 'multigrid',
     },
     prolongation: {
       term: 'prolongation',
-      def: 'The multigrid operator that carries a coarse-grid correction to the next finer grid by interpolation; bilinear on cell-centred grids (weights 9/16, 3/16, 3/16, 1/16). Its order plus that of the restriction must exceed the order of the equation (2 for Poisson).',
+      def: 'The transfer operator $P$ that interpolates a coarse-grid correction onto the next finer grid, such as cell-centred bilinear interpolation with weights 9/16, 3/16, 3/16, and 1/16. For a second-order elliptic equation, the prolongation and restriction orders must satisfy $m_P + m_R > 2$.',
       section: 'multigrid',
     },
     'conjugate-gradient': {
       term: 'conjugate gradient method (CG)',
-      def: 'The Krylov method for symmetric positive definite systems: it minimises the energy $\\tfrac12\\mathbf{x}^{\\mathrm{T}}A\\mathbf{x} - \\mathbf{b}^{\\mathrm{T}}\\mathbf{x}$ along directions that are mutually $A$-conjugate, so no step undoes another. One matrix–vector product per iteration; iterations grow like $\\sqrt{\\kappa}$. Hestenes and Stiefel, 1952.',
+      def: 'The Krylov subspace solver for symmetric positive definite systems $A\\mathbf{x} = \\mathbf{b}$, which minimises the quadratic functional $\\tfrac12\\mathbf{x}^{\\mathrm{T}}A\\mathbf{x} - \\mathbf{b}^{\\mathrm{T}}\\mathbf{x}$ along mutually $A$-conjugate directions ($\\mathbf{d}_i^{\\mathrm{T}}A\\mathbf{d}_j = 0$) so that each step preserves optimality over all previous directions. Requires one matrix–vector product per iteration and $O(\\sqrt{\\kappa})$ iterations. Hestenes and Stiefel, 1952.',
       section: 'krylov',
     },
     preconditioner: {
       term: 'preconditioner',
-      def: 'An approximation $M \\approx A$ that is cheap to invert, used to replace $A\\mathbf{x} = \\mathbf{b}$ by a better-conditioned system such as $M^{-1}A\\mathbf{x} = M^{-1}\\mathbf{b}$. For the pressure: incomplete Cholesky, MIC(0), or a multigrid cycle; the diagonal (Jacobi) does almost nothing.',
+      def: 'An easily inverted approximation $M \\approx A$ used to transform $A\\mathbf{x} = \\mathbf{b}$ into a better-conditioned system with a smaller eigenvalue ratio $\\kappa(M^{-1}A)$. Common choices for the pressure Poisson equation include incomplete Cholesky IC(0), modified incomplete Cholesky MIC(0), and a multigrid V-cycle.',
       section: 'krylov',
     },
     'krylov-method': {
       term: 'Krylov method',
-      def: 'An iterative method whose $k$-th iterate lies in $\\mathbf{x}_0 + \\operatorname{span}\\{\\mathbf{r}_0, A\\mathbf{r}_0, \\dots, A^{k-1}\\mathbf{r}_0\\}$ and is the best there in some sense: conjugate gradients (energy norm), GMRES (residual norm), Bi-CGSTAB. Needs only products with $A$.',
+      def: 'An iterative solver whose $k$-th iterate is selected from the affine Krylov subspace $\\mathbf{x}_0 + \\operatorname{span}\\{\\mathbf{r}_0, A\\mathbf{r}_0, \\dots, A^{k-1}\\mathbf{r}_0\\}$ using only matrix–vector products—including conjugate gradients (which minimises the $A$-norm of the error for SPD matrices), GMRES (which minimises the Euclidean residual norm), and Bi-CGSTAB.',
       section: 'krylov',
     },
     'work-unit': {
       term: 'work unit',
-      def: 'The cost of one pass of the stencil over the whole fine grid: a relaxation sweep or one matrix–vector product. Used to compare solvers whose iterations cost different amounts; a multigrid V(2,2) cycle is about 7.7 work units.',
+      def: 'A normalised unit of computational cost equal to one fine-grid stencil evaluation across all cells (one relaxation sweep or one matrix–vector product $A\\mathbf{x}$), under which a V(2,2) multigrid cycle costs about 7.65 work units.',
       section: 'relaxation',
     },
   },
@@ -465,13 +465,13 @@ export const chapter = {
       name: 'Relaxation stall',
       family: 'solver',
       symptom: 'A Jacobi or Gauss–Seidel pressure solver makes quick progress for a few sweeps, then the residual falls very slowly, while the error (if you can measure it) hardly moves. Doubling the grid resolution makes it about four times slower.',
-      cause: 'Relaxation is local: it damps rough error by a fixed factor per sweep, but the smooth error modes are multiplied by $1 - O(h^2)$, as (11.6) shows. What is left after the first sweeps is smooth error, which also makes a small residual, so the residual understates it.',
-      diagnose: 'Plot the residual against sweeps on a log axis: a fast drop then a long shallow line. Repeat on a grid twice as fine and check whether the sweep count to a fixed tolerance quadruples. Look at the error or the update: it should be smooth and large-scale.',
+      cause: 'Relaxation is local, damping oscillatory error modes by a fixed factor per sweep while multiplying the smoothest error mode by $1 - O(h^2)$, as shown in (11.6). After the initial sweeps remove the rough modes, the remaining smooth error produces a small residual and decays at an $O(n^{-2})$ rate.',
+      diagnose: 'Plot the residual norm against sweeps on a logarithmic axis, where stall appears as a steep initial drop followed by a nearly flat tail, and verify whether doubling the grid resolution quadruples the sweep count to a fixed tolerance. Inspecting the error or per-sweep update shows a smooth, domain-scale profile.',
       mitigations: [
-        'Use multigrid, with the relaxation as its smoother: grid-independent convergence for a few times the cost of a sweep. Some effort to implement, especially around solids.',
-        'Use preconditioned conjugate gradients (MIC(0) or a multigrid preconditioner): iterations grow like $n^{1/2}$ or not at all.',
+        'Use multigrid with the relaxation scheme as its smoother, achieving grid-independent convergence at the cost of a few fine-grid work units per cycle.',
+        'Use preconditioned conjugate gradients with MIC(0) or a multigrid preconditioner, so the iteration count scales as $O(n^{1/2})$ or $O(1)$.',
         'Warm-start from the previous time step\'s pressure, so that less smooth error has to be removed. Cheap, and always worth doing.',
-        'SOR with a well-chosen $\\omega$ turns $n^2$ into $n$, but needs tuning for every grid and geometry.',
+        'Use SOR with an estimated optimal $\\omega$ to reduce the scaling from $O(n^2)$ to $O(n)$, noting that $\\omega_{\\text{opt}}$ must be retuned when the grid or geometry changes.',
       ],
       section: 'smoothing',
       demo: { widget: 'solvers-modes', data: { preset: 'stall' } },
@@ -482,11 +482,11 @@ export const chapter = {
       family: 'solver',
       symptom: 'An SOR solver is much slower than expected, sometimes slower than Gauss–Seidel, or its residual oscillates and then grows. It may work on one grid and misbehave after a refinement or a change of geometry.',
       cause: 'The optimal factor $\\omega_{\\text{opt}} = 2/(1 + \\sqrt{1 - \\rho_J^2})$ depends on the grid size and the domain, and tends to 2 as the grid is refined. Just above the optimum the convergence degrades steeply, and for $\\omega \\ge 2$ the iteration diverges; below 1 it is slower than Gauss–Seidel.',
-      diagnose: 'Run a few values of $\\omega$ and count sweeps to a fixed tolerance: the curve has a sharp minimum. Check whether your $\\omega$ was tuned on a different grid. An oscillating residual history means $\\omega$ is past the optimum.',
+      diagnose: 'Sweep across several values of $\\omega$ and plot the iteration count to a fixed tolerance to locate the sharp minimum. Check whether $\\omega$ was tuned on a coarser grid, and look for oscillations in the residual history that indicate $\\omega > \\omega_{\\text{opt}}$.',
       mitigations: [
-        'Estimate $\\rho_J$ for the actual grid (for a box, from the grid size) and use Young\'s formula; err on the low side, since too small costs less than too large.',
+        'Estimate $\\rho_J$ for the current grid and apply Young\'s formula, erring slightly below $\\omega_{\\text{opt}}$ where the penalty is much smaller than above it.',
         'Adapt $\\omega$ during the solve from the observed convergence rate, as some codes do.',
-        'Replace SOR with a method that has no such parameter: conjugate gradients converges at the same rate as optimal SOR, and multigrid or preconditioned CG much faster.',
+        'Replace SOR with a parameter-free Krylov or multilevel solver—plain conjugate gradients matches the $O(n)$ scaling of optimal SOR automatically, while multigrid and preconditioned CG converge much faster.',
       ],
       section: 'relaxation',
       demo: { widget: 'solvers-sor', data: { preset: 'high' } },
@@ -497,9 +497,9 @@ export const chapter = {
       family: 'solver',
       symptom: 'Fluid volume drifts over time, smoke or liquid slowly gains or loses mass, and a fluid that should be at rest develops currents. The effect is proportional to the tolerance and builds up over many steps.',
       cause: 'The residual of the pressure solve is the divergence the projection leaves behind. Stopping at a loose tolerance, or after a fixed small number of iterations, leaves divergence in every step, and its effect on volume accumulates. With a fixed iteration count the leftover grows as the grid is refined.',
-      diagnose: 'After each projection, measure $\\|\\nabla\\cdot\\mathbf{u}\\|$ relative to the divergence before it, and sum $\\Delta t\\,\\tfrac12\\sum|\\nabla\\cdot\\mathbf{u}|h^2$ over steps. Halve the tolerance: if the drift halves, the solver is the cause.',
+      diagnose: 'After each projection, measure $\\|\\nabla\\cdot\\mathbf{u}\\|$ relative to the divergence before it, and sum $\\Delta t\\,\\tfrac12\\sum|\\nabla\\cdot\\mathbf{u}|h^2$ over steps. Halve the tolerance and check whether the cumulative volume drift halves.',
       mitigations: [
-        'Solve to a relative tolerance of $10^{-4}$ to $10^{-6}$ (tighter for quantitative work) with a fast solver, and warm-start it from the previous pressure, which makes tight tolerances cheap.',
+        'Solve to a relative tolerance of $10^{-4}$ to $10^{-6}$ (tighter for quantitative work) with a fast solver, and warm-start it from the previous pressure, which keeps tight tolerances inexpensive.',
         'Use a solver whose cost does not grow with the grid (multigrid or multigrid-preconditioned CG), so that a tight tolerance stays affordable on fine grids.',
         'If the budget is fixed, as in real-time graphics, correct the volume error explicitly, for example with a small source term proportional to the volume drift.',
       ],

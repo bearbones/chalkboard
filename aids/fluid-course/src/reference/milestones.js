@@ -10,7 +10,7 @@ export const chapter = {
   id: 'milestones',
   title: 'Milestones in computing flows',
   short: 'Milestones',
-  blurb: 'From Richardson’s forecast factory to GPU-scale turbulence: the papers and machines that exposed each numerical difficulty, and the ideas that tamed it.',
+  blurb: 'From Richardson’s forecast factory to GPU-scale turbulence—the papers and machines that exposed each numerical difficulty, and the ideas that resolved it.',
   render(root, ctx) {
     const items = MILESTONES.slice().sort((a, b) => (parseYear(a.year) ?? 0) - (parseYear(b.year) ?? 0));
     const kinds = Object.keys(KINDS).filter((k) => items.some((m) => m.kind === k));
@@ -58,7 +58,7 @@ export const chapter = {
       h('header.ch-head', h('p.kicker', 'Reference'), h('h1', chapter.title), h('p.lede', chapter.blurb), h('p.ch-meta', `${items.length} milestones`)),
       h(
         'div.prose',
-        h('p', 'Each entry names the difficulty it exposed or tamed. Most were found the hard way: a calculation that blew up, smeared out, or converged to the wrong answer. Dates are publication years. Where a result was presented or circulated earlier, the entry says so.'),
+        h('p', 'Each entry names the difficulty it exposed or resolved—often discovered when a calculation blew up, smeared out, or converged to the wrong answer. Dates are publication years; where a result was presented or circulated earlier, the entry notes both.'),
       ),
       h('div.ref-controls', chips, search),
       list,

@@ -60,7 +60,7 @@ export const chapter = {
       h('header.ch-head', h('p.kicker', 'Reference'), h('h1', chapter.title), h('p.lede', chapter.blurb), h('p.ch-meta', `${items.length} symbols and names`)),
       h(
         'div.prose',
-        h('p', 'Notation is a technology. The right symbol makes a hard idea short enough to manipulate, and many of the symbols in this course were fought over. Open a tile to see who introduced it, how they actually wrote it, and who made it standard.'),
+        h('p', 'Compact notation makes equations easier to manipulate, though many of the standard symbols in fluid dynamics took decades of debate to settle. Open a tile to see who introduced each symbol, how it was originally written, and how it became standard.'),
       ),
       h('div.ref-controls', chips, search),
       grid,

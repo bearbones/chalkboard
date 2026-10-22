@@ -44,7 +44,7 @@ export const chapter = {
   id: 'people',
   title: 'People and their ideas',
   short: 'People',
-  blurb: 'Who worked out how fluids move and how to compute them, from Archimedes to the GPU era: a timeline you can filter and search.',
+  blurb: 'Who worked out how fluids move and how to compute them, from Archimedes to the GPU era—a timeline you can filter and search.',
   render(root, ctx) {
     const people = PEOPLE.filter((p) => Number.isFinite(startYear(p))).sort((a, b) => startYear(a) - startYear(b));
     const now = new Date().getFullYear();
